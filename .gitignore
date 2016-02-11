@@ -1,0 +1,5 @@
+.idea/
+*.iml
+dependency-reduced-pom.xml
+target/
+*.aux.xml
