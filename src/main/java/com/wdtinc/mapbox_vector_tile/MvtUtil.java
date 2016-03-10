@@ -40,7 +40,7 @@ public final class MvtUtil {
     public static void toMvtCoord(Vec2d tilePos, MvtParams mvtParams, Vec2d mvtPos) {
 
         // Set mvtPos to y-inverted tilePos position w.r.t. tileHeight, scaled by ratio
-        mvtPos.set(tilePos.x, mvtParams.tileSize).sub(0f, tilePos.y).scale(mvtParams.ratio);
+        mvtPos.set(tilePos.x, mvtParams.tileSize).sub(0d, tilePos.y).scale(mvtParams.ratio);
     }
 
     /**
