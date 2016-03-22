@@ -32,4 +32,30 @@ public enum Command {
     public int getParamCount() {
         return paramCount;
     }
+
+
+    /**
+     * Return matching {@link Command} for the provided cmdId, or null if there is not
+     * a matching command.
+     *
+     * @param cmdId command id to find match for
+     * @return command with matching id, or null if there is not a matching command
+     */
+    public static Command fromId(int cmdId) {
+        final Command command;
+        switch (cmdId) {
+            case 1:
+                command = MoveTo;
+                break;
+            case 2:
+                command = LineTo;
+                break;
+            case 7:
+                command = ClosePath;
+                break;
+            default:
+                command = null;
+        }
+        return command;
+    }
 }

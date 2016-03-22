@@ -1,7 +1,9 @@
 package com.wdtinc.mapbox_vector_tile.adapt.jts;
 
+import com.vividsolutions.jts.algorithm.CGAlgorithms;
 import com.vividsolutions.jts.geom.*;
 import com.vividsolutions.jts.geom.util.AffineTransformation;
+import com.vividsolutions.jts.simplify.TopologyPreservingSimplifier;
 import com.wdtinc.mapbox_vector_tile.*;
 import com.wdtinc.mapbox_vector_tile.MvtUtil;
 import com.wdtinc.mapbox_vector_tile.encoding.GeomCmd;
@@ -19,10 +21,10 @@ import java.util.Stack;
 public final class JtsAdapter {
 
     /**
-     * Create geometry clipped and then normalized to tile 'pixel' dimensions declared in {@code mvtParams}.
+     * Create geometry clipped and then converted to MVT 'extent' coordinates.
      *
      * @param g original 'source' geometry
-     * @param tileEnvelope bounds for tile
+     * @param tileEnvelope world coordinate bounds for tile
      * @param geomFactory creates a geometry for the tile envelope
      * @param mvtParams specifies vector tile properties
      * @return clipped original geometry to the tile extents
@@ -37,11 +39,25 @@ public final class JtsAdapter {
         final double xOffset = -tileEnvelope.getMinX();
         final double yOffset = -tileEnvelope.getMinY();
 
+        // Transform Setup: Shift to 0 as minimum value
         t.translate(xOffset, yOffset);
-        t.scale(1d / (xDiff / (double)mvtParams.tileSize), 1d / (yDiff / (double)mvtParams.tileSize));
+
+        // Transform Setup: Scale X and Y to tile extent values, flip Y values
+        t.scale(1d / (xDiff / (double)mvtParams.extent),
+                -1d / (yDiff / (double)mvtParams.extent));
+
+        // Transform Setup: Bump Y values to positive quadrant
+        t.translate(0d, (double)mvtParams.extent);
 
         // The area contained in BOTH the 'original geometry', g, AND the 'tile envelope geometry' is the 'tile geometry'
-        return t.transform(tileEnvelopeGeom.intersection(g));
+        Geometry tfrmGeom = t.transform(tileEnvelopeGeom.intersection(g));
+
+        // Floating --> Integer, still contained within doubles
+        tfrmGeom.apply(RoundingFilter.INSTANCE);
+
+        tfrmGeom = TopologyPreservingSimplifier.simplify(tfrmGeom, .1d); // Can't use 0, specify value < .5d
+
+        return tfrmGeom;
     }
 
     /**
@@ -156,7 +172,7 @@ public final class JtsAdapter {
                 continue;
             }
 
-            nextFeature = toFeature(nextGeom, cursor, mvtParams, nextFeatureId++);
+            nextFeature = toFeature(nextGeom, cursor, nextFeatureId++);
             if(nextFeature != null) {
                 features.add(nextFeature);
             }
@@ -170,12 +186,10 @@ public final class JtsAdapter {
      *
      * @param geom flat geometry via {@link #flatFeatureList(Geometry)} that can be translated to a feature
      * @param cursor vector tile cursor position
-     * @param mvtParams parameters for vector tile creation
      * @param featureId id value to apply to the feature
      * @return new tile feature instance, or null on failure
      */
-    private static VectorTile.Tile.Feature toFeature(Geometry geom, Vec2d cursor, MvtParams mvtParams,
-                                                     int featureId) {
+    private static VectorTile.Tile.Feature toFeature(Geometry geom, Vec2d cursor, int featureId) {
 
         // Guard: UNKNOWN Geometry
         final VectorTile.Tile.GeomType mvtGeomType = JtsAdapter.toGeomType(geom);
@@ -194,40 +208,82 @@ public final class JtsAdapter {
         if(geom instanceof Point || geom instanceof MultiPoint) {
 
             // Encode as MVT point or multipoint
-            mvtGeom.addAll(ptsToGeomCmds(geom, cursor, mvtParams));
+            mvtGeom.addAll(ptsToGeomCmds(geom, cursor));
 
         } else if(geom instanceof LineString || geom instanceof MultiLineString) {
 
             // Encode as MVT linestring or multi-linestring
             for (int i = 0; i < geom.getNumGeometries(); ++i) {
-                mvtGeom.addAll(linesToGeomCmds(geom.getGeometryN(i), mvtClosePath, cursor, mvtParams));
+                mvtGeom.addAll(linesToGeomCmds(geom.getGeometryN(i), mvtClosePath, cursor, 1));
             }
 
         } else if(geom instanceof MultiPolygon || geom instanceof Polygon) {
 
+            // Encode as MVT polygon or multi-polygon
             for(int i = 0; i < geom.getNumGeometries(); ++i) {
 
-                // Encode as MVT polygon or multi-polygon
                 final Polygon nextPoly = (Polygon) geom.getGeometryN(i);
-
+                final List<Integer> nextPolyGeom = new ArrayList<>();
+                boolean valid = true;
 
                 // Add exterior ring
-                // TODO: UNCHECKED ENFORCE CCW WINDING (positive area)... JTS Normal form is SUPPOSED TO obey
-                mvtGeom.addAll(linesToGeomCmds(nextPoly.getExteriorRing(), mvtClosePath, cursor, mvtParams));
+                final LineString exteriorRing = nextPoly.getExteriorRing();
+
+                // Area must be non-zero
+                final double exteriorArea = CGAlgorithms.signedArea(exteriorRing.getCoordinates());
+                if(((int) Math.round(exteriorArea)) == 0) {
+                    continue;
+                }
+
+                // Check CCW Winding (must be positive area)
+                if(exteriorArea < 0d) {
+                    CoordinateArrays.reverse(exteriorRing.getCoordinates());
+                }
+
+                nextPolyGeom.addAll(linesToGeomCmds(exteriorRing, mvtClosePath, cursor, 2));
+
 
                 // Add interior rings
-                // TODO: UNCHECKED ENFORCE CW WINDING (negative area)... JTS Normal form is SUPPOSED TO obey
                 for(int ringIndex = 0; ringIndex < nextPoly.getNumInteriorRing(); ++ringIndex) {
-                    mvtGeom.addAll(linesToGeomCmds(nextPoly.getInteriorRingN(ringIndex), mvtClosePath, cursor, mvtParams));
+
+                    final LineString nextInteriorRing = nextPoly.getInteriorRingN(ringIndex);
+
+                    // Area must be non-zero
+                    final double interiorArea = CGAlgorithms.signedArea(nextInteriorRing.getCoordinates());
+                    if(((int)Math.round(interiorArea)) == 0) {
+                        continue;
+                    }
+
+                    // Check CW Winding (must be negative area)
+                    if(interiorArea > 0d) {
+                        CoordinateArrays.reverse(nextInteriorRing.getCoordinates());
+                    }
+
+                    // Interior ring area must be < exterior ring area, or entire geometry is invalid
+                    if(Math.abs(exteriorArea) <= Math.abs(interiorArea)) {
+                        valid = false;
+                        break;
+                    }
+
+                    nextPolyGeom.addAll(linesToGeomCmds(nextInteriorRing, mvtClosePath, cursor, 2));
+                }
+
+
+                if(valid) {
+                    mvtGeom.addAll(nextPolyGeom);
                 }
             }
+        }
+
+
+        if(mvtGeom.size() < 1) {
+            return null;
         }
 
         featureBuilder.addAllGeometry(mvtGeom);
 
         return featureBuilder.build();
     }
-
 
     /**
      * <p>Convert a {@link Point} or {@link MultiPoint} geometry to a list of MVT geometry drawing commands. See
@@ -238,10 +294,9 @@ public final class JtsAdapter {
      *
      * @param geom input of type {@link Point} or {@link MultiPoint}. Type is NOT checked and expected to be correct.
      * @param cursor modified during processing to contain next MVT cursor position
-     * @param mvtParams parameters for MVT creation
      * @return list of commands
      */
-    private static List<Integer> ptsToGeomCmds(final Geometry geom, final Vec2d cursor, final MvtParams mvtParams) {
+    private static List<Integer> ptsToGeomCmds(final Geometry geom, final Vec2d cursor) {
 
         // Guard: empty geometry coordinates
         final Coordinate[] geomCoords = geom.getCoordinates();
@@ -256,11 +311,6 @@ public final class JtsAdapter {
         /** Holds next MVT coordinate */
         final Vec2d mvtPos = new Vec2d();
 
-        /** Holds next tile coordinate */
-        final Vec2d tilePos = new Vec2d();
-
-        // TODO: Validate 'MoveTo' values do not contain duplicates, are less than max command length
-
         /** Length of 'MoveTo' draw command */
         int moveCmdLen = 0;
 
@@ -271,9 +321,7 @@ public final class JtsAdapter {
 
         for(int i = 0; i < geomCoords.length; ++i) {
             nextCoord = geomCoords[i];
-
-            // Tile 'pixel' coord to MVT coord
-            MvtUtil.toMvtCoord(tilePos.set(nextCoord.x, nextCoord.y), mvtParams, mvtPos);
+            mvtPos.set(nextCoord.x, nextCoord.y);
 
             // Ignore duplicate MVT points
             if(i == 0 || !equalAsInts(cursor, mvtPos)) {
@@ -282,12 +330,20 @@ public final class JtsAdapter {
             }
         }
 
-        // Write 'MoveTo' command header to first index
-        geomCmds.set(0, GeomCmd.cmdHdr(Command.MoveTo, moveCmdLen));
 
-        return geomCmds;
+        if(moveCmdLen <= GeomCmd.CMD_HDR_LEN_MAX) {
+
+            // Write 'MoveTo' command header to first index
+            geomCmds.set(0, GeomCmd.cmdHdr(Command.MoveTo, moveCmdLen));
+
+            return geomCmds;
+
+        } else {
+
+            // Invalid geometry, need at least 1 'LineTo' value to make a Multiline or Polygon
+            return Collections.emptyList();
+        }
     }
-
 
     /**
      * <p>Convert a {@link LineString} or {@link Polygon} to a list of MVT geometry drawing commands.
@@ -299,15 +355,15 @@ public final class JtsAdapter {
      *
      * @param geom input of type {@link LineString} or {@link Polygon}. Type is NOT checked and expected to be correct.
      * @param closeEnabled whether a 'ClosePath' command should terminate the command list
-     * @param mvtParams parameters for MVT creation
      * @param cursor modified during processing to contain next MVT cursor position
+     * @param minLineToLen minimum allowed length for LineTo command.
      * @return list of commands
      */
     private static List<Integer> linesToGeomCmds(
             final Geometry geom,
             final boolean closeEnabled,
             final Vec2d cursor,
-            final MvtParams mvtParams) {
+            final int minLineToLen) {
 
         // Guard: Not enough geometry coordinates for a line
         final Coordinate[] geomCoords = geom.getCoordinates();
@@ -322,17 +378,12 @@ public final class JtsAdapter {
         /** Holds next MVT coordinate */
         final Vec2d mvtPos = new Vec2d();
 
-        /** Holds next tile coordinate */
-        final Vec2d tilePos = new Vec2d();
-
         // Initial coordinate
         Coordinate nextCoord = geomCoords[0];
+        mvtPos.set(nextCoord.x, nextCoord.y);
 
         // Encode initial 'MoveTo' command
         geomCmds.add(GeomCmd.cmdHdr(Command.MoveTo, 1));
-
-        // Tile 'pixel' coord to MVT coord
-        MvtUtil.toMvtCoord(tilePos.set(nextCoord.x, nextCoord.y), mvtParams, mvtPos);
 
         moveCursor(cursor, geomCmds, mvtPos);
 
@@ -344,17 +395,13 @@ public final class JtsAdapter {
         geomCmds.add(0);
 
 
-        // TODO: Validate 'LineTo' values are less than max command length
-
         /** Length of 'LineTo' draw command */
         int lineToLength = 0;
 
 
         for(int i = 1; i < geomCoords.length - 1; ++i) {
             nextCoord = geomCoords[i];
-
-            // Tile 'pixel' coord to MVT coord
-            MvtUtil.toMvtCoord(tilePos.set(nextCoord.x, nextCoord.y), mvtParams, mvtPos);
+            mvtPos.set(nextCoord.x, nextCoord.y);
 
             // Ignore duplicate MVT points in sequence
             if(!equalAsInts(cursor, mvtPos)) {
@@ -366,9 +413,7 @@ public final class JtsAdapter {
 
         // Final coordinate
         nextCoord = geomCoords[geomCoords.length - 1];
-
-        // Tile 'pixel' coord to MVT coord
-        MvtUtil.toMvtCoord(tilePos.set(nextCoord.x, nextCoord.y), mvtParams, mvtPos);
+        mvtPos.set(nextCoord.x, nextCoord.y);
 
         // Ignore duplicate MVT points
         // Ignore final coordinates equivalent to a 'ClosePath'
@@ -378,7 +423,7 @@ public final class JtsAdapter {
         }
 
 
-        if(lineToLength > 0) {
+        if(lineToLength >= minLineToLen && lineToLength <= GeomCmd.CMD_HDR_LEN_MAX) {
 
             // Write 'LineTo' 'command header'
             geomCmds.set(lineToCmdHdrIndex, GeomCmd.cmdHdr(Command.LineTo, lineToLength));

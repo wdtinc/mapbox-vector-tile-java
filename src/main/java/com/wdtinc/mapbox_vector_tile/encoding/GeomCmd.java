@@ -19,6 +19,38 @@ public final class GeomCmd {
     }
 
     /**
+     * Get the length component from the 'command header' integer.
+     *
+     * @param cmdHdr encoded 'command header' integer
+     * @return command length
+     */
+    public static int getCmdLength(int cmdHdr) {
+        return cmdHdr >> 3;
+    }
+
+    /**
+     * Get the id component from the 'command header' integer.
+     *
+     * @param cmdHdr encoded 'command header' integer
+     * @return command id
+     */
+    public static int getCmdId(int cmdHdr) {
+        return cmdHdr & 0x7;
+    }
+
+    /**
+     * Get the id component from the 'command header' integer, then find the
+     * {@link Command} with a matching id.
+     *
+     * @param cmdHdr encoded 'command header' integer
+     * @return command with matching id, or null if a match could not be made
+     */
+    public static Command getCmd(int cmdHdr) {
+        final int cmdId = getCmdId(cmdHdr);
+        return Command.fromId(cmdId);
+    }
+
+    /**
      * @return encoded 'command header' integer for {@link Command#ClosePath}.
      */
     public static int closePathCmdHdr() {

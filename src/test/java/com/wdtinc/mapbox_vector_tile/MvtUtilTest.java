@@ -13,6 +13,10 @@ public final class MvtUtilTest {
     public void test() {
         assertEquals(GeomCmd.cmdHdr(Command.MoveTo, 1), 9);
         assertEquals(GeomCmd.cmdHdr(Command.MoveTo, 1) >> 3, 1);
+
+        assertEquals(GeomCmd.getCmdId(GeomCmd.cmdHdr(Command.MoveTo, 1)), Command.MoveTo.getCmdId());
+        assertEquals(GeomCmd.getCmdLength(GeomCmd.cmdHdr(Command.MoveTo, 1)), 1);
+
         Arrays.stream(Command.values()).forEach(c -> assertEquals(GeomCmd.cmdHdr(c, 1) & 0x7, c.getCmdId()));
     }
 }

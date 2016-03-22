@@ -37,11 +37,11 @@ public final class MvtUtil {
      * @param mvtParams defines tile world pixel dims and MVT extent dims
      * @param mvtPos modified to contain the MVT position (y=0 at top, scaled by ratio)
      */
-    public static void toMvtCoord(Vec2d tilePos, MvtParams mvtParams, Vec2d mvtPos) {
+//    public static void toMvtCoord(Vec2d tilePos, MvtParams mvtParams, Vec2d mvtPos) {
 
         // Set mvtPos to y-inverted tilePos position w.r.t. tileHeight, scaled by ratio
-        mvtPos.set(tilePos.x, mvtParams.tileSize).sub(0d, tilePos.y).scale(mvtParams.ratio);
-    }
+//        mvtPos.set(tilePos.x, mvtParams.tileSize).sub(0d, tilePos.y).scale(mvtParams.ratio);
+//    }
 
     /**
      * Create a new layer builder instance with initialized metadata.
