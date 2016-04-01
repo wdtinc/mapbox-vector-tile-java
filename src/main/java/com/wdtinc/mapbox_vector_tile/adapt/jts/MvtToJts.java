@@ -1,5 +1,6 @@
 package com.wdtinc.mapbox_vector_tile.adapt.jts;
 
+import com.google.protobuf.ProtocolStringList;
 import com.vividsolutions.jts.algorithm.CGAlgorithms;
 import com.vividsolutions.jts.geom.*;
 import com.wdtinc.mapbox_vector_tile.Command;
@@ -7,6 +8,7 @@ import com.wdtinc.mapbox_vector_tile.VectorTile;
 import com.wdtinc.mapbox_vector_tile.encoding.GeomCmd;
 import com.wdtinc.mapbox_vector_tile.encoding.ZigZag;
 import com.wdtinc.mapbox_vector_tile.util.Vec2d;
+import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -18,15 +20,29 @@ public final class MvtToJts {
     private static final int MIN_LINE_STRING_LEN = 6; // MoveTo,1 + LineTo,1
     private static final int MIN_POLYGON_LEN = 9; // MoveTo,1 + LineTo,2 + ClosePath
 
-    public static List<Geometry> loadMvt(Path p, GeometryFactory geomFactory) throws IOException {
+
+    /**
+     * Load an MVT to JTS geometries using coordinates.
+     *
+     * @param p path to the MVT
+     * @param geomFactory allows for JTS geometry creation
+     * @param tagConverter convert JTS
+     * @return JTS geometries in using MVT coordinates
+     * @throws IOException
+     */
+    public static List<Geometry> loadMvt(Path p, GeometryFactory geomFactory, ITagConverter tagConverter) throws IOException {
         final List<Geometry> tileGeoms = new ArrayList<>();
         final VectorTile.Tile mvt = VectorTile.Tile.parseFrom(new FileInputStream(p.toFile()));
-        Vec2d cursor = new Vec2d();
+        final Vec2d cursor = new Vec2d();
 
         for(VectorTile.Tile.Layer nextLayer : mvt.getLayersList()) {
+
+            final ProtocolStringList keysList = nextLayer.getKeysList();
+            final List<VectorTile.Tile.Value> valuesList = nextLayer.getValuesList();
+
             for(VectorTile.Tile.Feature nextFeature : nextLayer.getFeaturesList()) {
 
-                final long id = nextFeature.getId(); // TODO: ID --> User data
+                final long id = nextFeature.getId(); // TODO: Expose id in some fashion...
                 final VectorTile.Tile.GeomType geomType = nextFeature.getType();
 
                 if(geomType == VectorTile.Tile.GeomType.UNKNOWN) {
@@ -34,9 +50,11 @@ public final class MvtToJts {
                 }
 
                 final List<Integer> geomCmds = nextFeature.getGeometryList();
+                cursor.set(0d, 0d);
                 final Geometry nextGeom = readGeometry(geomCmds, geomType, geomFactory, cursor);
                 if(nextGeom != null) {
                     tileGeoms.add(nextGeom);
+                    nextGeom.setUserData(tagConverter.toUserData(nextFeature.getTagsList(), keysList, valuesList));
                 }
             }
         }
@@ -59,12 +77,20 @@ public final class MvtToJts {
                 result = readPolys(geomFactory, geomCmds, cursor);
                 break;
             default:
-                // TODO: error, unhandled geometry type
+                LoggerFactory.getLogger(MvtToJts.class).error("readGeometry(): Unhandled geometry type [{}]", geomType);
         }
 
         return result;
     }
 
+    /**
+     * Create {@link Point} or {@link MultiPoint} from MVT geometry drawing commands.
+     *
+     * @param geomFactory creates JTS geometry
+     * @param geomCmds contains MVT geometry commands
+     * @param cursor contains current MVT extent position
+     * @return JTS geometry or null on failure
+     */
     private static Geometry readPoints(GeometryFactory geomFactory, List<Integer> geomCmds, Vec2d cursor) {
 
         // Guard: must have header
@@ -110,6 +136,14 @@ public final class MvtToJts {
         return coordSeq.size() == 1 ? geomFactory.createPoint(coordSeq) : geomFactory.createMultiPoint(coordSeq);
     }
 
+    /**
+     * Create {@link LineString} or {@link MultiLineString} from MVT geometry drawing commands.
+     *
+     * @param geomFactory creates JTS geometry
+     * @param geomCmds contains MVT geometry commands
+     * @param cursor contains current MVT extent position
+     * @return JTS geometry or null on failure
+     */
     private static Geometry readLines(GeometryFactory geomFactory, List<Integer> geomCmds, Vec2d cursor) {
 
         // Guard: must have header
@@ -194,9 +228,17 @@ public final class MvtToJts {
             geoms.add(geomFactory.createLineString(nextCoordSeq));
         }
 
-        return geoms.size() == 1 ? geoms.get(0) : geomFactory.createMultiLineString((LineString[]) geoms.toArray());
+        return geoms.size() == 1 ? geoms.get(0) : geomFactory.createMultiLineString(geoms.toArray(new LineString[geoms.size()]));
     }
 
+    /**
+     * Create {@link Polygon} or {@link MultiPolygon} from MVT geometry drawing commands.
+     *
+     * @param geomFactory creates JTS geometry
+     * @param geomCmds contains MVT geometry commands
+     * @param cursor contains current MVT extent position
+     * @return JTS geometry or null on failure
+     */
     private static Geometry readPolys(GeometryFactory geomFactory, List<Integer> geomCmds, Vec2d cursor) {
 
         // Guard: must have header
@@ -210,7 +252,7 @@ public final class MvtToJts {
         int cmdHdr;
         int cmdLength;
         Command cmd;
-        List<Polygon> rings = new ArrayList<>(1);
+        List<LinearRing> rings = new ArrayList<>(1);
         CoordinateSequence nextCoordSeq;
         Coordinate nextCoord;
 
@@ -297,7 +339,7 @@ public final class MvtToJts {
             nextCoord.setOrdinate(0, nextCoordSeq.getOrdinate(0, 0));
             nextCoord.setOrdinate(1, nextCoordSeq.getOrdinate(0, 1));
 
-            rings.add(geomFactory.createPolygon(nextCoordSeq));
+            rings.add(geomFactory.createLinearRing(nextCoordSeq));
         }
 
 
@@ -310,22 +352,32 @@ public final class MvtToJts {
             return polygons.get(0);
 
         } else {
-            return geomFactory.createMultiPolygon((Polygon[]) polygons.toArray());
+            return geomFactory.createMultiPolygon(polygons.toArray(new Polygon[polygons.size()]));
         }
     }
 
 
-    private static List<Polygon> classifyRings(List<Polygon> rings, GeometryFactory geomFactory) {
+    /**
+     * <p>Classify a list of rings into polygons using surveyor formula
+     * ({@link CGAlgorithms#signedArea(Coordinate[])}).</p>
+     *
+     * <p>Zero-area polygons are removed.</p>
+     *
+     * @param rings linear rings to classify into polygons
+     * @param geomFactory creates JTS geometry
+     * @return polygons from classified rings
+     */
+    private static List<Polygon> classifyRings(List<LinearRing> rings, GeometryFactory geomFactory) {
         final List<Polygon> polygons = new ArrayList<>();
-        final List<Polygon> holes = new ArrayList<>();
+        final List<LinearRing> holes = new ArrayList<>();
 
         double outerArea = 0d;
-        Polygon outerPoly = null;
+        LinearRing outerPoly = null;
 
-        for(Polygon r : rings) {
+        for(LinearRing r : rings) {
             double area = CGAlgorithms.signedArea(r.getCoordinates());
 
-            if(!r.getExteriorRing().isRing()) {
+            if(!r.isRing()) {
                 continue; // sanity check, could probably be handled in a isSimple() check
             }
 
@@ -335,7 +387,7 @@ public final class MvtToJts {
 
             if(area > 0d) {
                 if(outerPoly != null) {
-                    polygons.add(geomFactory.createPolygon((LinearRing)outerPoly.getExteriorRing(), (LinearRing[]) holes.toArray()));
+                    polygons.add(geomFactory.createPolygon(outerPoly, holes.toArray(new LinearRing[holes.size()])));
                     holes.clear();
                 }
 
@@ -355,7 +407,8 @@ public final class MvtToJts {
         }
 
         if(outerPoly != null) {
-            polygons.add(geomFactory.createPolygon((LinearRing)outerPoly.getExteriorRing(), (LinearRing[]) holes.toArray()));
+            holes.toArray();
+            polygons.add(geomFactory.createPolygon(outerPoly, holes.toArray(new LinearRing[holes.size()])));
         }
 
         return polygons;

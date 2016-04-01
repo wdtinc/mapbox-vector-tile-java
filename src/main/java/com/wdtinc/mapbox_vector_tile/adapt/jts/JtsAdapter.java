@@ -3,17 +3,16 @@ package com.wdtinc.mapbox_vector_tile.adapt.jts;
 import com.vividsolutions.jts.algorithm.CGAlgorithms;
 import com.vividsolutions.jts.geom.*;
 import com.vividsolutions.jts.geom.util.AffineTransformation;
+import com.vividsolutions.jts.operation.valid.IsValidOp;
 import com.vividsolutions.jts.simplify.TopologyPreservingSimplifier;
 import com.wdtinc.mapbox_vector_tile.*;
 import com.wdtinc.mapbox_vector_tile.MvtUtil;
 import com.wdtinc.mapbox_vector_tile.encoding.GeomCmd;
 import com.wdtinc.mapbox_vector_tile.encoding.ZigZag;
 import com.wdtinc.mapbox_vector_tile.util.Vec2d;
+import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Stack;
+import java.util.*;
 
 /**
  * Adapt JTS {@link Geometry} to 'Mapbox Vector Tile' objects.
@@ -29,7 +28,9 @@ public final class JtsAdapter {
      * @param mvtParams specifies vector tile properties
      * @return clipped original geometry to the tile extents
      */
-    public static Geometry createTileGeom(Geometry g, Envelope tileEnvelope, GeometryFactory geomFactory, MvtParams mvtParams) {
+    public static List<Geometry> createTileGeom(Geometry g, Envelope tileEnvelope, GeometryFactory geomFactory,
+                                                MvtParams mvtParams) {
+
         final Geometry tileEnvelopeGeom = geomFactory.toGeometry(tileEnvelope);
 
         final AffineTransformation t = new AffineTransformation();
@@ -49,15 +50,67 @@ public final class JtsAdapter {
         // Transform Setup: Bump Y values to positive quadrant
         t.translate(0d, (double)mvtParams.extent);
 
+
         // The area contained in BOTH the 'original geometry', g, AND the 'tile envelope geometry' is the 'tile geometry'
-        Geometry tfrmGeom = t.transform(tileEnvelopeGeom.intersection(g));
+        final List<Geometry> intersectedGeoms = flatIntersection(tileEnvelopeGeom, g);
+        final List<Geometry> transformedGeoms = new ArrayList<>(intersectedGeoms.size());
 
-        // Floating --> Integer, still contained within doubles
-        tfrmGeom.apply(RoundingFilter.INSTANCE);
+        // Transform intersected geometry
+        Geometry nextTransformGeom;
+        Object nextUserData;
+        for(Geometry nextInterGeom : intersectedGeoms) {
+            nextUserData = nextInterGeom.getUserData();
 
-        tfrmGeom = TopologyPreservingSimplifier.simplify(tfrmGeom, .1d); // Can't use 0, specify value < .5d
+            nextTransformGeom = t.transform(nextInterGeom);
 
-        return tfrmGeom;
+            // Floating --> Integer, still contained within doubles
+            nextTransformGeom.apply(RoundingFilter.INSTANCE);
+
+            nextTransformGeom = TopologyPreservingSimplifier.simplify(nextTransformGeom, .1d); // Can't use 0d, specify value < .5d
+
+            nextTransformGeom.setUserData(nextUserData);
+
+            transformedGeoms.add(nextTransformGeom);
+        }
+
+        return transformedGeoms;
+    }
+
+    /**
+     * JTS does not support intersection on a {@link GeometryCollection}. This function works around this
+     * by performing intersection on a flat list of geometry. The resulting list is pre-filtered for invalid
+     * or empty geometry (outside of bounds). Invalid geometry are logged as errors.
+     *
+     * @param envelope non-list geometry defines bounding area
+     * @param data geometry passed to {@link #flatFeatureList(Geometry)}
+     * @return list of geometry from {@code data} intersecting with {@code envelope}.
+     */
+    private static List<Geometry> flatIntersection(Geometry envelope, Geometry data) {
+        final List<Geometry> dataGeoms = flatFeatureList(data);
+        final List<Geometry> intersectedGeoms = new ArrayList<>(dataGeoms.size());
+
+        Geometry nextIntersected;
+        for(Geometry nextGeom : dataGeoms) {
+            try {
+                final IsValidOp isValidOp = new IsValidOp(nextGeom);
+
+                if(isValidOp.isValid()) {
+                    nextIntersected = envelope.intersection(nextGeom);
+                    if(!nextIntersected.isEmpty()) {
+                        nextIntersected.setUserData(nextGeom.getUserData());
+                        intersectedGeoms.add(nextIntersected);
+                    }
+
+                } else {
+                    LoggerFactory.getLogger(JtsAdapter.class).error("{}", isValidOp.getValidationError());
+                }
+
+            } catch (TopologyException e) {
+                LoggerFactory.getLogger(JtsAdapter.class).error(e.getMessage(), e);
+            }
+        }
+
+        return intersectedGeoms;
     }
 
     /**
@@ -103,7 +156,7 @@ public final class JtsAdapter {
      * @param geom geometry to flatten
      * @return list of MVT-feature-ready geometries
      */
-    private static List<Geometry> flatFeatureList(Geometry geom) {
+    public static List<Geometry> flatFeatureList(Geometry geom) {
         final List<Geometry> singleGeoms = new ArrayList<>();
         final Stack<Geometry> geomStack = new Stack<>();
 
@@ -141,38 +194,54 @@ public final class JtsAdapter {
 
     /**
      * <p>Convert JTS {@link Geometry} to a list of vector tile features.
-     * The Geometry must be in 'pixel' space where (0, 0) is the lower left and (256, 256)
-     * is the upper right.</p>
+     * The Geometry should be in MVT coordinates.</p>
      *
      * <p>Each geometry will have its own ID.</p>
      *
      * @param geometry JTS geometry to convert
-     * @param cursor MVT layer cursor
-     * @param mvtParams specifies vector tile properties
      * @param filter determines which geometry to accept or reject for inclusion in the feature
+     * @param layerProps layer properties for tagging features
+     * @param userDataConverter convert {@link Geometry#userData} to MVT feature tags
      */
-    public static List<VectorTile.Tile.Feature> toFeatures(Geometry geometry, Vec2d cursor, MvtParams mvtParams,
-                                                           IGeometryFilter filter) {
+    public static List<VectorTile.Tile.Feature> toFeatures(Geometry geometry, IGeometryFilter filter,
+                                                           MvtLayerProps layerProps, IUserDataConverter userDataConverter) {
+        return toFeatures(flatFeatureList(geometry), filter, layerProps, userDataConverter);
+    }
+
+    /**
+     * <p>Convert a flat list of JTS {@link Geometry} to a list of vector tile features.
+     * The Geometry should be in MVT coordinates.</p>
+     *
+     * <p>Each geometry will have its own ID.</p>
+     *
+     * @param flatGeoms flat list of JTS geometry to convert
+     * @param filter determines which geometry to accept or reject for inclusion in the feature
+     * @param layerProps layer properties for tagging features
+     * @param userDataConverter convert {@link Geometry#userData} to MVT feature tags
+     */
+    public static List<VectorTile.Tile.Feature> toFeatures(Collection<Geometry> flatGeoms, IGeometryFilter filter,
+                                                           MvtLayerProps layerProps, IUserDataConverter userDataConverter) {
 
         // Guard: empty geometry
-        if(geometry.isEmpty()) {
+        if(flatGeoms.isEmpty()) {
             return Collections.emptyList();
         }
 
-
         final List<VectorTile.Tile.Feature> features = new ArrayList<>();
-        final List<Geometry> flatGeomList = flatFeatureList(geometry);
+        final Vec2d cursor = new Vec2d();
 
-        int nextFeatureId = 1;
+        int nextFeatureId = 1; // TODO: Need better feature ID handling..., or don't bother
         VectorTile.Tile.Feature nextFeature;
 
-        for(Geometry nextGeom : flatGeomList) {
+        for(Geometry nextGeom : flatGeoms) {
 
+            // TODO: Could easily move outside this function...
             if(!filter.accept(nextGeom)) {
                 continue;
             }
 
-            nextFeature = toFeature(nextGeom, cursor, nextFeatureId++);
+            cursor.set(0d, 0d);
+            nextFeature = toFeature(nextGeom, cursor, nextFeatureId++, layerProps, userDataConverter);
             if(nextFeature != null) {
                 features.add(nextFeature);
             }
@@ -187,9 +256,11 @@ public final class JtsAdapter {
      * @param geom flat geometry via {@link #flatFeatureList(Geometry)} that can be translated to a feature
      * @param cursor vector tile cursor position
      * @param featureId id value to apply to the feature
+     * @param layerProps layer properties for tagging features
      * @return new tile feature instance, or null on failure
      */
-    private static VectorTile.Tile.Feature toFeature(Geometry geom, Vec2d cursor, int featureId) {
+    private static VectorTile.Tile.Feature toFeature(Geometry geom, Vec2d cursor, int featureId,
+                                                     MvtLayerProps layerProps, IUserDataConverter userDataConverter) {
 
         // Guard: UNKNOWN Geometry
         final VectorTile.Tile.GeomType mvtGeomType = JtsAdapter.toGeomType(geom);
@@ -281,6 +352,10 @@ public final class JtsAdapter {
         }
 
         featureBuilder.addAllGeometry(mvtGeom);
+
+
+        // Feature Properties
+        userDataConverter.addTags(geom.getUserData(), layerProps, featureBuilder);
 
         return featureBuilder.build();
     }
