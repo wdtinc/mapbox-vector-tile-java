@@ -1,13 +1,13 @@
-package com.wdtinc.mapbox_vector_tile.adapt.jts;
+package com.wdtinc.mapbox_vector_tile.build;
 
-import com.wdtinc.mapbox_vector_tile.MvtUtil;
+import com.wdtinc.mapbox_vector_tile.encoding.MvtValue;
 
 import java.util.*;
 
 /**
  * Support MVT features that must reference properties by their key and value index.
  */
-public class MvtLayerProps {
+public final class MvtLayerProps {
     private LinkedHashMap<String, Integer> keys;
     private LinkedHashMap<Object, Integer> vals;
 
@@ -45,11 +45,11 @@ public class MvtLayerProps {
      *
      * @param value value to add
      * @return index of the value, -1 on unsupported value types
-     * @see MvtUtil#isValidPropValue(Object)
+     * @see MvtValue#isValidPropValue(Object)
      */
     public int addValue(Object value) {
         Objects.requireNonNull(value);
-        if(!MvtUtil.isValidPropValue(value)) {
+        if(!MvtValue.isValidPropValue(value)) {
             return -1;
         }
 

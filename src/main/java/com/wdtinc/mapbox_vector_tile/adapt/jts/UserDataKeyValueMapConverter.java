@@ -1,6 +1,7 @@
 package com.wdtinc.mapbox_vector_tile.adapt.jts;
 
 import com.wdtinc.mapbox_vector_tile.VectorTile;
+import com.wdtinc.mapbox_vector_tile.build.MvtLayerProps;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;

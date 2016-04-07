@@ -1,7 +1,7 @@
 package com.wdtinc.mapbox_vector_tile.adapt.jts;
 
 import com.google.protobuf.ProtocolStringList;
-import com.wdtinc.mapbox_vector_tile.MvtUtil;
+import com.wdtinc.mapbox_vector_tile.encoding.MvtValue;
 import com.wdtinc.mapbox_vector_tile.VectorTile;
 
 import java.util.HashMap;
@@ -50,7 +50,7 @@ public final class TagKeyValueMapConverter implements ITagConverter {
                     && valIndex >= 0 && valIndex < valuesList.size();
 
             if(valid) {
-                userData.put(keysList.get(keyIndex), MvtUtil.valueToObj(valuesList.get(valIndex)));
+                userData.put(keysList.get(keyIndex), MvtValue.toObject(valuesList.get(valIndex)));
             }
         }
 

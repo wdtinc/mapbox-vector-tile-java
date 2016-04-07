@@ -3,10 +3,10 @@ package com.wdtinc.mapbox_vector_tile.adapt.jts;
 import com.google.protobuf.ProtocolStringList;
 import com.vividsolutions.jts.algorithm.CGAlgorithms;
 import com.vividsolutions.jts.geom.*;
-import com.wdtinc.mapbox_vector_tile.Command;
-import com.wdtinc.mapbox_vector_tile.VectorTile;
 import com.wdtinc.mapbox_vector_tile.encoding.GeomCmd;
-import com.wdtinc.mapbox_vector_tile.encoding.ZigZag;
+import com.wdtinc.mapbox_vector_tile.VectorTile;
+import com.wdtinc.mapbox_vector_tile.encoding.GeomCmdHdr;
+import com.wdtinc.mapbox_vector_tile.util.ZigZag;
 import com.wdtinc.mapbox_vector_tile.util.Vec2d;
 import org.slf4j.LoggerFactory;
 
@@ -100,11 +100,11 @@ public final class MvtToJts {
 
         // Read command header
         final int cmdHdr = geomCmds.get(0);
-        final int cmdLength = GeomCmd.getCmdLength(cmdHdr);
-        final Command cmd = GeomCmd.getCmd(cmdHdr);
+        final int cmdLength = GeomCmdHdr.getCmdLength(cmdHdr);
+        final GeomCmd cmd = GeomCmdHdr.getCmd(cmdHdr);
 
         // Guard: command type
-        if(cmd != Command.MoveTo) {
+        if(cmd != GeomCmd.MoveTo) {
             return null;
         }
 
@@ -115,7 +115,7 @@ public final class MvtToJts {
 
         // Guard: header data unsupported by geometry command buffer
         //  (require header and at least 1 value * 2 params)
-        if(cmdLength * Command.MoveTo.getParamCount() + 1 > geomCmds.size()) {
+        if(cmdLength * GeomCmd.MoveTo.getParamCount() + 1 > geomCmds.size()) {
             return null;
         }
 
@@ -156,7 +156,7 @@ public final class MvtToJts {
 
         int cmdHdr;
         int cmdLength;
-        Command cmd;
+        GeomCmd cmd;
         List<LineString> geoms = new ArrayList<>(1);
         CoordinateSequence nextCoordSeq;
         Coordinate nextCoord;
@@ -169,11 +169,11 @@ public final class MvtToJts {
 
             // Read command header
             cmdHdr = geomCmds.get(i++);
-            cmdLength = GeomCmd.getCmdLength(cmdHdr);
-            cmd = GeomCmd.getCmd(cmdHdr);
+            cmdLength = GeomCmdHdr.getCmdLength(cmdHdr);
+            cmd = GeomCmdHdr.getCmd(cmdHdr);
 
             // Guard: command type and length
-            if(cmd != Command.MoveTo || cmdLength != 1) {
+            if(cmd != GeomCmd.MoveTo || cmdLength != 1) {
                 break;
             }
 
@@ -190,17 +190,17 @@ public final class MvtToJts {
 
             // Read command header
             cmdHdr = geomCmds.get(i++);
-            cmdLength = GeomCmd.getCmdLength(cmdHdr);
-            cmd = GeomCmd.getCmd(cmdHdr);
+            cmdLength = GeomCmdHdr.getCmdLength(cmdHdr);
+            cmd = GeomCmdHdr.getCmd(cmdHdr);
 
             // Guard: command type and length
-            if(cmd != Command.LineTo || cmdLength < 1) {
+            if(cmd != GeomCmd.LineTo || cmdLength < 1) {
                 break;
             }
 
             // Guard: header data length unsupported by geometry command buffer
             //  (require at least (1 value * 2 params) + current_index)
-            if((cmdLength * Command.LineTo.getParamCount()) + i > geomCmds.size()) {
+            if((cmdLength * GeomCmd.LineTo.getParamCount()) + i > geomCmds.size()) {
                 break;
             }
 
@@ -251,7 +251,7 @@ public final class MvtToJts {
 
         int cmdHdr;
         int cmdLength;
-        Command cmd;
+        GeomCmd cmd;
         List<LinearRing> rings = new ArrayList<>(1);
         CoordinateSequence nextCoordSeq;
         Coordinate nextCoord;
@@ -264,11 +264,11 @@ public final class MvtToJts {
 
             // Read command header
             cmdHdr = geomCmds.get(i++);
-            cmdLength = GeomCmd.getCmdLength(cmdHdr);
-            cmd = GeomCmd.getCmd(cmdHdr);
+            cmdLength = GeomCmdHdr.getCmdLength(cmdHdr);
+            cmd = GeomCmdHdr.getCmd(cmdHdr);
 
             // Guard: command type and length
-            if(cmd != Command.MoveTo || cmdLength != 1) {
+            if(cmd != GeomCmd.MoveTo || cmdLength != 1) {
                 break;
             }
 
@@ -285,17 +285,17 @@ public final class MvtToJts {
 
             // Read command header
             cmdHdr = geomCmds.get(i++);
-            cmdLength = GeomCmd.getCmdLength(cmdHdr);
-            cmd = GeomCmd.getCmd(cmdHdr);
+            cmdLength = GeomCmdHdr.getCmdLength(cmdHdr);
+            cmd = GeomCmdHdr.getCmd(cmdHdr);
 
             // Guard: command type and length
-            if(cmd != Command.LineTo || cmdLength < 2) {
+            if(cmd != GeomCmd.LineTo || cmdLength < 2) {
                 break;
             }
 
             // Guard: header data length unsupported by geometry command buffer
             //  (require at least (2 values * 2 params) + (current index 'i') + (1 for ClosePath))
-            if((cmdLength * Command.LineTo.getParamCount()) + i + 1 > geomCmds.size()) {
+            if((cmdLength * GeomCmd.LineTo.getParamCount()) + i + 1 > geomCmds.size()) {
                 break;
             }
 
@@ -327,10 +327,10 @@ public final class MvtToJts {
 
             // Read command header
             cmdHdr = geomCmds.get(i++);
-            cmdLength = GeomCmd.getCmdLength(cmdHdr);
-            cmd = GeomCmd.getCmd(cmdHdr);
+            cmdLength = GeomCmdHdr.getCmdLength(cmdHdr);
+            cmd = GeomCmdHdr.getCmd(cmdHdr);
 
-            if(cmd != Command.ClosePath || cmdLength != 1) {
+            if(cmd != GeomCmd.ClosePath || cmdLength != 1) {
                 break;
             }
 

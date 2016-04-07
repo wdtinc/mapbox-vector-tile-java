@@ -1,64 +1,63 @@
 package com.wdtinc.mapbox_vector_tile.encoding;
 
-import com.wdtinc.mapbox_vector_tile.Command;
+/**
+ * MVT draw command types.
+ *
+ * @see GeomCmdHdr
+ */
+public enum GeomCmd {
+    MoveTo(1, 2),
+    LineTo(2, 2),
+    ClosePath(7, 0);
 
-public final class GeomCmd {
+    /** Unique command ID */
+    private final int cmdId;
 
-    private static int CLOSE_PATH_HDR = cmdHdr(Command.ClosePath, 1);
+    /** Amount of parameters that follow the command */
+    private final int paramCount;
+
+    GeomCmd(int cmdId, int paramCount) {
+        this.cmdId = cmdId;
+        this.paramCount = paramCount;
+    }
 
     /**
-     * <p>Encodes a 'command header' with the first 3 LSB as the command id, the remaining bits
-     * as the command length. See the vector-tile-spec for details.</p>
+     * @return unique command ID
+     */
+    public int getCmdId() {
+        return cmdId;
+    }
+
+    /**
+     * @return amount of parameters that follow the command
+     */
+    public int getParamCount() {
+        return paramCount;
+    }
+
+
+    /**
+     * Return matching {@link GeomCmd} for the provided cmdId, or null if there is not
+     * a matching command.
      *
-     * @param cmd command to execute
-     * @param length how many times the command is repeated
-     * @return encoded 'command header' integer
+     * @param cmdId command id to find match for
+     * @return command with matching id, or null if there is not a matching command
      */
-    public static int cmdHdr(Command cmd, int length) {
-        return (cmd.getCmdId() & 0x7) | (length << 3);
+    public static GeomCmd fromId(int cmdId) {
+        final GeomCmd geomCmd;
+        switch (cmdId) {
+            case 1:
+                geomCmd = MoveTo;
+                break;
+            case 2:
+                geomCmd = LineTo;
+                break;
+            case 7:
+                geomCmd = ClosePath;
+                break;
+            default:
+                geomCmd = null;
+        }
+        return geomCmd;
     }
-
-    /**
-     * Get the length component from the 'command header' integer.
-     *
-     * @param cmdHdr encoded 'command header' integer
-     * @return command length
-     */
-    public static int getCmdLength(int cmdHdr) {
-        return cmdHdr >> 3;
-    }
-
-    /**
-     * Get the id component from the 'command header' integer.
-     *
-     * @param cmdHdr encoded 'command header' integer
-     * @return command id
-     */
-    public static int getCmdId(int cmdHdr) {
-        return cmdHdr & 0x7;
-    }
-
-    /**
-     * Get the id component from the 'command header' integer, then find the
-     * {@link Command} with a matching id.
-     *
-     * @param cmdHdr encoded 'command header' integer
-     * @return command with matching id, or null if a match could not be made
-     */
-    public static Command getCmd(int cmdHdr) {
-        final int cmdId = getCmdId(cmdHdr);
-        return Command.fromId(cmdId);
-    }
-
-    /**
-     * @return encoded 'command header' integer for {@link Command#ClosePath}.
-     */
-    public static int closePathCmdHdr() {
-        return CLOSE_PATH_HDR;
-    }
-
-    /**
-     * Maximum allowed 'command header' length value.
-     */
-    public static final int CMD_HDR_LEN_MAX = (int) (Math.pow(2, 29) - 1);
 }

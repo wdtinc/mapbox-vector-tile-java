@@ -1,10 +1,10 @@
-package com.wdtinc.mapbox_vector_tile;
+package com.wdtinc.mapbox_vector_tile.build;
 
 
 /**
  * Immutable parameters collection for Mapbox-Vector-Tile creation.
  */
-public final class MvtParams {
+public final class MvtLayerParams {
 
     /** the resolution of the tile in 'pixel' dimensions */
     public final int tileSize;
@@ -22,9 +22,9 @@ public final class MvtParams {
      *     <li>{@link #extent} = 4096</li>
      * </ul>
      *
-     * @see #MvtParams(int, int)
+     * @see #MvtLayerParams(int, int)
      */
-    public MvtParams() {
+    public MvtLayerParams() {
         this(256, 4096);
     }
 
@@ -32,7 +32,7 @@ public final class MvtParams {
      * @param tileSize the resolution of the tile in pixel coordinates, must be > 0
      * @param extent the resolution of the MVT local coordinate system, must be > 0
      */
-    public MvtParams(int tileSize, int extent) {
+    public MvtLayerParams(int tileSize, int extent) {
         if(tileSize <= 0) {
             throw new IllegalArgumentException("tileSize must be > 0");
         }

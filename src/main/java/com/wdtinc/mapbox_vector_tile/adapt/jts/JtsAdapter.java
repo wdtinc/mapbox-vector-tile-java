@@ -6,9 +6,12 @@ import com.vividsolutions.jts.geom.util.AffineTransformation;
 import com.vividsolutions.jts.operation.valid.IsValidOp;
 import com.vividsolutions.jts.simplify.TopologyPreservingSimplifier;
 import com.wdtinc.mapbox_vector_tile.*;
-import com.wdtinc.mapbox_vector_tile.MvtUtil;
+import com.wdtinc.mapbox_vector_tile.build.MvtLayerProps;
+import com.wdtinc.mapbox_vector_tile.encoding.MvtUtil;
+import com.wdtinc.mapbox_vector_tile.build.MvtLayerParams;
+import com.wdtinc.mapbox_vector_tile.encoding.GeomCmdHdr;
 import com.wdtinc.mapbox_vector_tile.encoding.GeomCmd;
-import com.wdtinc.mapbox_vector_tile.encoding.ZigZag;
+import com.wdtinc.mapbox_vector_tile.util.ZigZag;
 import com.wdtinc.mapbox_vector_tile.util.Vec2d;
 import org.slf4j.LoggerFactory;
 
@@ -25,11 +28,11 @@ public final class JtsAdapter {
      * @param g original 'source' geometry
      * @param tileEnvelope world coordinate bounds for tile
      * @param geomFactory creates a geometry for the tile envelope
-     * @param mvtParams specifies vector tile properties
+     * @param mvtLayerParams specifies vector tile properties
      * @return clipped original geometry to the tile extents
      */
     public static List<Geometry> createTileGeom(Geometry g, Envelope tileEnvelope, GeometryFactory geomFactory,
-                                                MvtParams mvtParams) {
+                                                MvtLayerParams mvtLayerParams) {
 
         final Geometry tileEnvelopeGeom = geomFactory.toGeometry(tileEnvelope);
 
@@ -44,11 +47,11 @@ public final class JtsAdapter {
         t.translate(xOffset, yOffset);
 
         // Transform Setup: Scale X and Y to tile extent values, flip Y values
-        t.scale(1d / (xDiff / (double)mvtParams.extent),
-                -1d / (yDiff / (double)mvtParams.extent));
+        t.scale(1d / (xDiff / (double) mvtLayerParams.extent),
+                -1d / (yDiff / (double) mvtLayerParams.extent));
 
         // Transform Setup: Bump Y values to positive quadrant
-        t.translate(0d, (double)mvtParams.extent);
+        t.translate(0d, (double) mvtLayerParams.extent);
 
 
         // The area contained in BOTH the 'original geometry', g, AND the 'tile envelope geometry' is the 'tile geometry'
@@ -406,10 +409,10 @@ public final class JtsAdapter {
         }
 
 
-        if(moveCmdLen <= GeomCmd.CMD_HDR_LEN_MAX) {
+        if(moveCmdLen <= GeomCmdHdr.CMD_HDR_LEN_MAX) {
 
             // Write 'MoveTo' command header to first index
-            geomCmds.set(0, GeomCmd.cmdHdr(Command.MoveTo, moveCmdLen));
+            geomCmds.set(0, GeomCmdHdr.cmdHdr(GeomCmd.MoveTo, moveCmdLen));
 
             return geomCmds;
 
@@ -458,7 +461,7 @@ public final class JtsAdapter {
         mvtPos.set(nextCoord.x, nextCoord.y);
 
         // Encode initial 'MoveTo' command
-        geomCmds.add(GeomCmd.cmdHdr(Command.MoveTo, 1));
+        geomCmds.add(GeomCmdHdr.cmdHdr(GeomCmd.MoveTo, 1));
 
         moveCursor(cursor, geomCmds, mvtPos);
 
@@ -498,13 +501,13 @@ public final class JtsAdapter {
         }
 
 
-        if(lineToLength >= minLineToLen && lineToLength <= GeomCmd.CMD_HDR_LEN_MAX) {
+        if(lineToLength >= minLineToLen && lineToLength <= GeomCmdHdr.CMD_HDR_LEN_MAX) {
 
             // Write 'LineTo' 'command header'
-            geomCmds.set(lineToCmdHdrIndex, GeomCmd.cmdHdr(Command.LineTo, lineToLength));
+            geomCmds.set(lineToCmdHdrIndex, GeomCmdHdr.cmdHdr(GeomCmd.LineTo, lineToLength));
 
             if(closeEnabled) {
-                geomCmds.add(GeomCmd.closePathCmdHdr());
+                geomCmds.add(GeomCmdHdr.closePathCmdHdr());
             }
 
             return geomCmds;

@@ -1,4 +1,4 @@
-package com.wdtinc.mapbox_vector_tile;
+package com.wdtinc.mapbox_vector_tile.adapt.jts;
 
 // TODO: Cleanup...
 public interface IFeaturePolicy {
