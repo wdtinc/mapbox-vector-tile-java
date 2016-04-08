@@ -4,7 +4,10 @@ import com.vividsolutions.jts.geom.CoordinateSequence;
 import com.vividsolutions.jts.geom.CoordinateSequenceFilter;
 
 /**
- * Round each coordinate value to an integer.
+ * <p>Round each coordinate value to an integer.</p>
+ *
+ * <p>Mapbox vector tiles have fixed precision. This filter can be useful for reducing precision to
+ * the extent of a MVT.</p>
  */
 public final class RoundingFilter implements CoordinateSequenceFilter {
 

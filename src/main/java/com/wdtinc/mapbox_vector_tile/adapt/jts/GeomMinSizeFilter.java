@@ -5,6 +5,8 @@ import com.vividsolutions.jts.geom.*;
 /**
  * Filter {@link Polygon} and {@link MultiPolygon} by area or
  * {@link LineString} and {@link MultiLineString} by length.
+ *
+ * @see IGeometryFilter
  */
 public final class GeomMinSizeFilter implements IGeometryFilter {
 

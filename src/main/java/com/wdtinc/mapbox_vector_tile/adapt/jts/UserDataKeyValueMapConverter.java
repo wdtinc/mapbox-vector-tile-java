@@ -8,6 +8,8 @@ import java.util.Map;
 
 /**
  * Convert simple user data {@link Map} where the keys are {@link String} and values are {@link Object}.
+ *
+ * @see IUserDataConverter
  */
 public final class UserDataKeyValueMapConverter implements IUserDataConverter {
     @Override

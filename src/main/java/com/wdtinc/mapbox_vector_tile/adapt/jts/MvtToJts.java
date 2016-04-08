@@ -42,7 +42,8 @@ public final class MvtToJts {
 
             for(VectorTile.Tile.Feature nextFeature : nextLayer.getFeaturesList()) {
 
-                final long id = nextFeature.getId(); // TODO: Expose id in some fashion...
+                final Long id = nextFeature.hasId() ? nextFeature.getId() : null;
+
                 final VectorTile.Tile.GeomType geomType = nextFeature.getType();
 
                 if(geomType == VectorTile.Tile.GeomType.UNKNOWN) {
@@ -54,7 +55,7 @@ public final class MvtToJts {
                 final Geometry nextGeom = readGeometry(geomCmds, geomType, geomFactory, cursor);
                 if(nextGeom != null) {
                     tileGeoms.add(nextGeom);
-                    nextGeom.setUserData(tagConverter.toUserData(nextFeature.getTagsList(), keysList, valuesList));
+                    nextGeom.setUserData(tagConverter.toUserData(id, nextFeature.getTagsList(), keysList, valuesList));
                 }
             }
         }
@@ -358,14 +359,14 @@ public final class MvtToJts {
 
 
     /**
-     * <p>Classify a list of rings into polygons using surveyor formula
-     * ({@link CGAlgorithms#signedArea(Coordinate[])}).</p>
+     * <p>Classify a list of rings into polygons using surveyor formula.</p>
      *
      * <p>Zero-area polygons are removed.</p>
      *
      * @param rings linear rings to classify into polygons
      * @param geomFactory creates JTS geometry
      * @return polygons from classified rings
+     * @see CGAlgorithms#signedArea(Coordinate[])
      */
     private static List<Polygon> classifyRings(List<LinearRing> rings, GeometryFactory geomFactory) {
         final List<Polygon> polygons = new ArrayList<>();

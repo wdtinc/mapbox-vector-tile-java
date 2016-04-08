@@ -7,10 +7,13 @@ import java.util.List;
 
 /**
  * Ignores tags, always returns null.
+ *
+ * @see ITagConverter
  */
-public class TagIgnoreConverter implements ITagConverter {
+public final class TagIgnoreConverter implements ITagConverter {
     @Override
-    public Object toUserData(List<Integer> tags, ProtocolStringList keysList, List<VectorTile.Tile.Value> valuesList) {
+    public Object toUserData(Long id, List<Integer> tags, ProtocolStringList keysList,
+                             List<VectorTile.Tile.Value> valuesList) {
         return null;
     }
 }
