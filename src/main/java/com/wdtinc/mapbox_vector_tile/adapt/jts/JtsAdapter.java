@@ -11,7 +11,7 @@ import com.wdtinc.mapbox_vector_tile.encoding.MvtUtil;
 import com.wdtinc.mapbox_vector_tile.build.MvtLayerParams;
 import com.wdtinc.mapbox_vector_tile.encoding.GeomCmdHdr;
 import com.wdtinc.mapbox_vector_tile.encoding.GeomCmd;
-import com.wdtinc.mapbox_vector_tile.util.ZigZag;
+import com.wdtinc.mapbox_vector_tile.encoding.ZigZag;
 import com.wdtinc.mapbox_vector_tile.util.Vec2d;
 import org.slf4j.LoggerFactory;
 
@@ -29,10 +29,14 @@ public final class JtsAdapter {
      * @param tileEnvelope world coordinate bounds for tile
      * @param geomFactory creates a geometry for the tile envelope
      * @param mvtLayerParams specifies vector tile properties
+     * @param filter geometry values that fail filter after transforms are removed
      * @return clipped original geometry to the tile extents
      */
-    public static List<Geometry> createTileGeom(Geometry g, Envelope tileEnvelope, GeometryFactory geomFactory,
-                                                MvtLayerParams mvtLayerParams) {
+    public static List<Geometry> createTileGeom(Geometry g,
+                                                Envelope tileEnvelope,
+                                                GeometryFactory geomFactory,
+                                                MvtLayerParams mvtLayerParams,
+                                                IGeometryFilter filter) {
 
         final Geometry tileEnvelopeGeom = geomFactory.toGeometry(tileEnvelope);
 
@@ -73,7 +77,10 @@ public final class JtsAdapter {
 
             nextTransformGeom.setUserData(nextUserData);
 
-            transformedGeoms.add(nextTransformGeom);
+            // Apply filter on transformed geometry
+            if(filter.accept(nextTransformGeom)) {
+                transformedGeoms.add(nextTransformGeom);
+            }
         }
 
         return transformedGeoms;
@@ -123,7 +130,7 @@ public final class JtsAdapter {
      * @return MVT type for the given JTS Geometry, may return
      *     {@link com.wdtinc.mapbox_vector_tile.VectorTile.Tile.GeomType#UNKNOWN}
      */
-    public static VectorTile.Tile.GeomType toGeomType(Geometry geometry) {
+    private static VectorTile.Tile.GeomType toGeomType(Geometry geometry) {
         VectorTile.Tile.GeomType result = VectorTile.Tile.GeomType.UNKNOWN;
 
         if(geometry instanceof Point
@@ -193,8 +200,6 @@ public final class JtsAdapter {
         return singleGeoms;
     }
 
-    // TODO: Support layer tags (feature attributes)
-
     /**
      * <p>Convert JTS {@link Geometry} to a list of vector tile features.
      * The Geometry should be in MVT coordinates.</p>
@@ -202,13 +207,15 @@ public final class JtsAdapter {
      * <p>Each geometry will have its own ID.</p>
      *
      * @param geometry JTS geometry to convert
-     * @param filter determines which geometry to accept or reject for inclusion in the feature
      * @param layerProps layer properties for tagging features
      * @param userDataConverter convert {@link Geometry#userData} to MVT feature tags
+     * @see #flatFeatureList(Geometry)
+     * @see #createTileGeom(Geometry, Envelope, GeometryFactory, MvtLayerParams, IGeometryFilter)
      */
-    public static List<VectorTile.Tile.Feature> toFeatures(Geometry geometry, IGeometryFilter filter,
-                                                           MvtLayerProps layerProps, IUserDataConverter userDataConverter) {
-        return toFeatures(flatFeatureList(geometry), filter, layerProps, userDataConverter);
+    public static List<VectorTile.Tile.Feature> toFeatures(Geometry geometry,
+                                                           MvtLayerProps layerProps,
+                                                           IUserDataConverter userDataConverter) {
+        return toFeatures(flatFeatureList(geometry), layerProps, userDataConverter);
     }
 
     /**
@@ -218,12 +225,14 @@ public final class JtsAdapter {
      * <p>Each geometry will have its own ID.</p>
      *
      * @param flatGeoms flat list of JTS geometry to convert
-     * @param filter determines which geometry to accept or reject for inclusion in the feature
      * @param layerProps layer properties for tagging features
      * @param userDataConverter convert {@link Geometry#userData} to MVT feature tags
+     * @see #flatFeatureList(Geometry)
+     * @see #createTileGeom(Geometry, Envelope, GeometryFactory, MvtLayerParams, IGeometryFilter)
      */
-    public static List<VectorTile.Tile.Feature> toFeatures(Collection<Geometry> flatGeoms, IGeometryFilter filter,
-                                                           MvtLayerProps layerProps, IUserDataConverter userDataConverter) {
+    public static List<VectorTile.Tile.Feature> toFeatures(Collection<Geometry> flatGeoms,
+                                                           MvtLayerProps layerProps,
+                                                           IUserDataConverter userDataConverter) {
 
         // Guard: empty geometry
         if(flatGeoms.isEmpty()) {
@@ -233,18 +242,11 @@ public final class JtsAdapter {
         final List<VectorTile.Tile.Feature> features = new ArrayList<>();
         final Vec2d cursor = new Vec2d();
 
-        int nextFeatureId = 1; // TODO: Need better feature ID handling..., or don't bother
         VectorTile.Tile.Feature nextFeature;
 
         for(Geometry nextGeom : flatGeoms) {
-
-            // TODO: Could easily move outside this function...
-            if(!filter.accept(nextGeom)) {
-                continue;
-            }
-
             cursor.set(0d, 0d);
-            nextFeature = toFeature(nextGeom, cursor, nextFeatureId++, layerProps, userDataConverter);
+            nextFeature = toFeature(nextGeom, cursor, layerProps, userDataConverter);
             if(nextFeature != null) {
                 features.add(nextFeature);
             }
@@ -258,12 +260,13 @@ public final class JtsAdapter {
      *
      * @param geom flat geometry via {@link #flatFeatureList(Geometry)} that can be translated to a feature
      * @param cursor vector tile cursor position
-     * @param featureId id value to apply to the feature
      * @param layerProps layer properties for tagging features
      * @return new tile feature instance, or null on failure
      */
-    private static VectorTile.Tile.Feature toFeature(Geometry geom, Vec2d cursor, int featureId,
-                                                     MvtLayerProps layerProps, IUserDataConverter userDataConverter) {
+    private static VectorTile.Tile.Feature toFeature(Geometry geom,
+                                                     Vec2d cursor,
+                                                     MvtLayerProps layerProps,
+                                                     IUserDataConverter userDataConverter) {
 
         // Guard: UNKNOWN Geometry
         final VectorTile.Tile.GeomType mvtGeomType = JtsAdapter.toGeomType(geom);
@@ -276,7 +279,6 @@ public final class JtsAdapter {
         final boolean mvtClosePath = MvtUtil.shouldClosePath(mvtGeomType);
         final List<Integer> mvtGeom = new ArrayList<>();
 
-        featureBuilder.setId(featureId);
         featureBuilder.setType(mvtGeomType);
 
         if(geom instanceof Point || geom instanceof MultiPoint) {
@@ -554,7 +556,7 @@ public final class JtsAdapter {
      * @param coordCount coordinate count for the geometry
      * @return required geometry buffer length
      */
-    public static int geomCmdBuffLenPts(int coordCount) {
+    private static int geomCmdBuffLenPts(int coordCount) {
 
         // 1 MoveTo Header, 2 parameters * coordCount
         return 1 + (coordCount * 2);
@@ -567,7 +569,7 @@ public final class JtsAdapter {
      * @param closeEnabled whether a 'ClosePath' command should terminate the command list
      * @return required geometry buffer length
      */
-    public static int geomCmdBuffLenLines(int coordCount, boolean closeEnabled) {
+    private static int geomCmdBuffLenLines(int coordCount, boolean closeEnabled) {
 
         // MoveTo Header, LineTo Header, Optional ClosePath Header, 2 parameters * coordCount
         return 2 + (closeEnabled ? 1 : 0) + (coordCount * 2);

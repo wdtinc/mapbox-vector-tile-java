@@ -1,4 +1,4 @@
-package com.wdtinc.mapbox_vector_tile.util;
+package com.wdtinc.mapbox_vector_tile.encoding;
 
 /**
  * See: <a href="https://developers.google.com/protocol-buffers/docs/encoding#types">Google Protocol Buffers Docs</a>

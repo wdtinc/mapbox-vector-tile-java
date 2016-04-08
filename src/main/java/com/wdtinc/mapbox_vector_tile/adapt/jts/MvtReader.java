@@ -6,33 +6,67 @@ import com.vividsolutions.jts.geom.*;
 import com.wdtinc.mapbox_vector_tile.encoding.GeomCmd;
 import com.wdtinc.mapbox_vector_tile.VectorTile;
 import com.wdtinc.mapbox_vector_tile.encoding.GeomCmdHdr;
-import com.wdtinc.mapbox_vector_tile.util.ZigZag;
+import com.wdtinc.mapbox_vector_tile.encoding.ZigZag;
 import com.wdtinc.mapbox_vector_tile.util.Vec2d;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class MvtToJts {
+/**
+ * Load Mapbox Vector Tiles (MVT) to JTS {@link Geometry}. Feature tags may be converted
+ * to user data via {@link ITagConverter}.
+ */
+public final class MvtReader {
     private static final int MIN_LINE_STRING_LEN = 6; // MoveTo,1 + LineTo,1
     private static final int MIN_POLYGON_LEN = 9; // MoveTo,1 + LineTo,2 + ClosePath
 
 
     /**
-     * Load an MVT to JTS geometries using coordinates.
+     * Convenience method for loading MVT from file.
+     * See {@link #loadMvt(InputStream, GeometryFactory, ITagConverter)}.
      *
      * @param p path to the MVT
      * @param geomFactory allows for JTS geometry creation
-     * @param tagConverter convert JTS
+     * @param tagConverter converts MVT feature tags to JTS user data object
      * @return JTS geometries in using MVT coordinates
-     * @throws IOException
+     * @throws IOException failure reading MVT from path
+     * @see #loadMvt(InputStream, GeometryFactory, ITagConverter)
+     * @see Geometry
+     * @see Geometry#getUserData()
      */
-    public static List<Geometry> loadMvt(Path p, GeometryFactory geomFactory, ITagConverter tagConverter) throws IOException {
+    public static List<Geometry> loadMvt(Path p, GeometryFactory geomFactory,
+                                         ITagConverter tagConverter) throws IOException {
+        final List<Geometry> geometries;
+
+        try(final InputStream is = new FileInputStream(p.toFile())) {
+            geometries = loadMvt(is, geomFactory, tagConverter);
+        }
+
+        return geometries;
+    }
+
+    /**
+     * Load an MVT to JTS geometries using coordinates. Uses {@code tagConverter} to create user data
+     * from feature properties.
+     *
+     * @param is stream with MVT data
+     * @param geomFactory allows for JTS geometry creation
+     * @param tagConverter converts MVT feature tags to JTS user data object.
+     * @return JTS geometries in using MVT coordinates
+     * @throws IOException failure reading MVT from stream
+     * @see Geometry
+     * @see Geometry#getUserData()
+     */
+    public static List<Geometry> loadMvt(InputStream is, GeometryFactory geomFactory,
+                                         ITagConverter tagConverter) throws IOException {
+
         final List<Geometry> tileGeoms = new ArrayList<>();
-        final VectorTile.Tile mvt = VectorTile.Tile.parseFrom(new FileInputStream(p.toFile()));
+        final VectorTile.Tile mvt = VectorTile.Tile.parseFrom(is);
         final Vec2d cursor = new Vec2d();
 
         for(VectorTile.Tile.Layer nextLayer : mvt.getLayersList()) {
@@ -78,7 +112,7 @@ public final class MvtToJts {
                 result = readPolys(geomFactory, geomCmds, cursor);
                 break;
             default:
-                LoggerFactory.getLogger(MvtToJts.class).error("readGeometry(): Unhandled geometry type [{}]", geomType);
+                LoggerFactory.getLogger(MvtReader.class).error("readGeometry(): Unhandled geometry type [{}]", geomType);
         }
 
         return result;

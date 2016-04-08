@@ -1,6 +1,6 @@
 package com.wdtinc.mapbox_vector_tile;
 
-import com.wdtinc.mapbox_vector_tile.util.ZigZag;
+import com.wdtinc.mapbox_vector_tile.encoding.ZigZag;
 import org.junit.Test;
 
 import static org.junit.Assert.*;

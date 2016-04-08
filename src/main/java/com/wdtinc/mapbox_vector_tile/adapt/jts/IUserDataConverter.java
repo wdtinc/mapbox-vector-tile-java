@@ -9,9 +9,10 @@ import com.wdtinc.mapbox_vector_tile.build.MvtLayerProps;
 public interface IUserDataConverter {
 
     /**
-     * <p>Convert user data to MVT tags. The supplied user data may be null.</p>
+     * <p>Convert user data to MVT tags. The supplied user data may be null. Implementation
+     * should update layerProps and optionally set the feature id.</p>
      *
-     * <p>SIDE EFFECT: The implementation may add tags to the feature builder.</p>
+     * <p>SIDE EFFECT: The implementation may add tags to featureBuilder, modify layerProps, modify userData.</p>
      *
      * @param userData user object may contain values in any format; may be null
      * @param layerProps properties global to the layer the feature belongs to
