@@ -23,16 +23,18 @@ import java.util.*;
 public final class JtsAdapter {
 
     /**
-     * Create geometry clipped and then converted to MVT 'extent' coordinates.
+     * Create geometry clipped and then converted to MVT 'extent' coordinates. Result
+     * contains both clipped geometry (intersection) and transformed geometry for encoding to MVT.
      *
      * @param g original 'source' geometry
      * @param tileEnvelope world coordinate bounds for tile
      * @param geomFactory creates a geometry for the tile envelope
      * @param mvtLayerParams specifies vector tile properties
      * @param filter geometry values that fail filter after transforms are removed
-     * @return clipped original geometry to the tile extents
+     * @return tile geometry result
+     * @see TileGeomResult
      */
-    public static List<Geometry> createTileGeom(Geometry g,
+    public static TileGeomResult createTileGeom(Geometry g,
                                                 Envelope tileEnvelope,
                                                 GeometryFactory geomFactory,
                                                 MvtLayerParams mvtLayerParams,
@@ -83,7 +85,7 @@ public final class JtsAdapter {
             }
         }
 
-        return transformedGeoms;
+        return new TileGeomResult(intersectedGeoms, transformedGeoms);
     }
 
     /**
