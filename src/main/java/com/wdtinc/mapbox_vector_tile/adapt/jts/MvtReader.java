@@ -357,7 +357,7 @@ public final class MvtReader {
 
 
             // --------------------------------------------
-            // Expected: ClosePath command of length 0
+            // Expected: ClosePath command of length 1
             // --------------------------------------------
 
             // Read command header

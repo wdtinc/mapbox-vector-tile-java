@@ -3,7 +3,6 @@ package com.wdtinc.mapbox_vector_tile.adapt.jts;
 import com.vividsolutions.jts.algorithm.CGAlgorithms;
 import com.vividsolutions.jts.geom.*;
 import com.vividsolutions.jts.geom.util.AffineTransformation;
-import com.vividsolutions.jts.operation.valid.IsValidOp;
 import com.vividsolutions.jts.simplify.TopologyPreservingSimplifier;
 import com.wdtinc.mapbox_vector_tile.*;
 import com.wdtinc.mapbox_vector_tile.build.MvtLayerProps;
@@ -35,6 +34,27 @@ public final class JtsAdapter {
      * @see TileGeomResult
      */
     public static TileGeomResult createTileGeom(Geometry g,
+                                                Envelope tileEnvelope,
+                                                GeometryFactory geomFactory,
+                                                MvtLayerParams mvtLayerParams,
+                                                IGeometryFilter filter) {
+        return createTileGeom(flatFeatureList(g), tileEnvelope, geomFactory,
+                mvtLayerParams, filter);
+    }
+
+    /**
+     * Create geometry clipped and then converted to MVT 'extent' coordinates. Result
+     * contains both clipped geometry (intersection) and transformed geometry for encoding to MVT.
+     *
+     * @param g original 'source' geometry, passed through {@link #flatFeatureList(Geometry)}
+     * @param tileEnvelope world coordinate bounds for tile
+     * @param geomFactory creates a geometry for the tile envelope
+     * @param mvtLayerParams specifies vector tile properties
+     * @param filter geometry values that fail filter after transforms are removed
+     * @return tile geometry result
+     * @see TileGeomResult
+     */
+    public static TileGeomResult createTileGeom(List<Geometry> g,
                                                 Envelope tileEnvelope,
                                                 GeometryFactory geomFactory,
                                                 MvtLayerParams mvtLayerParams,
@@ -75,6 +95,7 @@ public final class JtsAdapter {
             // Floating --> Integer, still contained within doubles
             nextTransformGeom.apply(RoundingFilter.INSTANCE);
 
+            // TODO: Refactor line simplification
             nextTransformGeom = TopologyPreservingSimplifier.simplify(nextTransformGeom, .1d); // Can't use 0d, specify value < .5d
 
             nextTransformGeom.setUserData(nextUserData);
@@ -89,32 +110,39 @@ public final class JtsAdapter {
     }
 
     /**
+     * @param envelope non-list geometry defines bounding area
+     * @param data geometry passed to {@link #flatFeatureList(Geometry)}
+     * @return list of geometry from {@code data} intersecting with {@code envelope}.
+     * @see #flatIntersection(Geometry, List)
+     */
+    private static List<Geometry> flatIntersection(Geometry envelope, Geometry data) {
+        return flatIntersection(envelope, flatFeatureList(data));
+    }
+
+    /**
      * JTS does not support intersection on a {@link GeometryCollection}. This function works around this
      * by performing intersection on a flat list of geometry. The resulting list is pre-filtered for invalid
      * or empty geometry (outside of bounds). Invalid geometry are logged as errors.
      *
      * @param envelope non-list geometry defines bounding area
-     * @param data geometry passed to {@link #flatFeatureList(Geometry)}
+     * @param dataGeoms geometry pre-passed through {@link #flatFeatureList(Geometry)}
      * @return list of geometry from {@code data} intersecting with {@code envelope}.
      */
-    private static List<Geometry> flatIntersection(Geometry envelope, Geometry data) {
-        final List<Geometry> dataGeoms = flatFeatureList(data);
+    private static List<Geometry> flatIntersection(Geometry envelope, List<Geometry> dataGeoms) {
         final List<Geometry> intersectedGeoms = new ArrayList<>(dataGeoms.size());
 
         Geometry nextIntersected;
         for(Geometry nextGeom : dataGeoms) {
             try {
-                final IsValidOp isValidOp = new IsValidOp(nextGeom);
 
-                if(isValidOp.isValid()) {
+                // AABB intersection culling
+                if(envelope.getEnvelopeInternal().intersects(nextGeom.getEnvelopeInternal())) {
+
                     nextIntersected = envelope.intersection(nextGeom);
                     if(!nextIntersected.isEmpty()) {
                         nextIntersected.setUserData(nextGeom.getUserData());
                         intersectedGeoms.add(nextIntersected);
                     }
-
-                } else {
-                    LoggerFactory.getLogger(JtsAdapter.class).error("{}", isValidOp.getValidationError());
                 }
 
             } catch (TopologyException e) {
@@ -128,11 +156,11 @@ public final class JtsAdapter {
     /**
      * Get the MVT type mapping for the provided JTS Geometry.
      *
-     * @param geometry JTS Geometry to get type for
+     * @param geometry JTS Geometry to get MVT type for
      * @return MVT type for the given JTS Geometry, may return
      *     {@link com.wdtinc.mapbox_vector_tile.VectorTile.Tile.GeomType#UNKNOWN}
      */
-    private static VectorTile.Tile.GeomType toGeomType(Geometry geometry) {
+    public static VectorTile.Tile.GeomType toGeomType(Geometry geometry) {
         VectorTile.Tile.GeomType result = VectorTile.Tile.GeomType.UNKNOWN;
 
         if(geometry instanceof Point
@@ -447,15 +475,20 @@ public final class JtsAdapter {
             final Vec2d cursor,
             final int minLineToLen) {
 
-        // Guard: Not enough geometry coordinates for a line
         final Coordinate[] geomCoords = geom.getCoordinates();
-        if(geomCoords.length < 2) {
+
+        // Check geometry for repeated end points
+        final int repeatEndCoordCount = countCoordRepeatReverse(geomCoords);
+        final int minExpGeomCoords = geomCoords.length - repeatEndCoordCount;
+
+        // Guard/Optimization: Not enough geometry coordinates for a line
+        if(minExpGeomCoords < 2) {
             Collections.emptyList();
         }
 
 
         /** Tile commands and parameters */
-        final List<Integer> geomCmds = new ArrayList<>(geomCmdBuffLenLines(geomCoords.length, closeEnabled));
+        final List<Integer> geomCmds = new ArrayList<>(geomCmdBuffLenLines(minExpGeomCoords, closeEnabled));
 
         /** Holds next MVT coordinate */
         final Vec2d mvtPos = new Vec2d();
@@ -480,8 +513,7 @@ public final class JtsAdapter {
         /** Length of 'LineTo' draw command */
         int lineToLength = 0;
 
-
-        for(int i = 1; i < geomCoords.length - 1; ++i) {
+        for(int i = 1; i < minExpGeomCoords; ++i) {
             nextCoord = geomCoords[i];
             mvtPos.set(nextCoord.x, nextCoord.y);
 
@@ -491,19 +523,6 @@ public final class JtsAdapter {
                 moveCursor(cursor, geomCmds, mvtPos);
             }
         }
-
-
-        // Final coordinate
-        nextCoord = geomCoords[geomCoords.length - 1];
-        mvtPos.set(nextCoord.x, nextCoord.y);
-
-        // Ignore duplicate MVT points
-        // Ignore final coordinates equivalent to a 'ClosePath'
-        if(!equalAsInts(cursor, mvtPos) && (!closeEnabled || !geomCoords[0].equals(nextCoord))) {
-            ++lineToLength;
-            moveCursor(cursor, geomCmds, mvtPos);
-        }
-
 
         if(lineToLength >= minLineToLen && lineToLength <= GeomCmdHdr.CMD_HDR_LEN_MAX) {
 
@@ -521,6 +540,33 @@ public final class JtsAdapter {
             // Invalid geometry, need at least 1 'LineTo' value to make a Multiline or Polygon
             return Collections.emptyList();
         }
+    }
+
+    /**
+     * <p>Count number of coordinates starting from the end of the coordinate array backwards
+     * that match the first coordinate value.</p>
+     *
+     * <p>Useful for ensuring self-closing line strings do not repeat the first coordinate.</p>
+     *
+     * @param coords coordinates to check for duplicate points
+     * @return number of duplicate points at the rear of the list
+     */
+    private static int countCoordRepeatReverse(Coordinate[] coords) {
+        int repeatCoords = 0;
+
+        final Coordinate firstCoord = coords[0];
+        Coordinate nextCoord;
+
+        for(int i = coords.length - 1; i > 0; --i) {
+            nextCoord = coords[i];
+            if(equalAsInts2d(firstCoord, nextCoord)) {
+                ++repeatCoords;
+            } else {
+                break;
+            }
+        }
+
+        return repeatCoords;
     }
 
     /**
@@ -542,6 +588,20 @@ public final class JtsAdapter {
     }
 
     /**
+     * Return true if the values of the two {@link Coordinate} are equal when their
+     * first and second ordinates are cast as ints. Ignores 3rd ordinate.
+     *
+     * @param a first coordinate to compare
+     * @param b second coordinate to compare
+     * @return true if the values of the two {@link Coordinate} are equal when their
+     * first and second ordinates are cast as ints
+     */
+    private static boolean equalAsInts2d(Coordinate a, Coordinate b) {
+        return ((int)a.getOrdinate(0)) == ((int)b.getOrdinate(0))
+                && ((int)a.getOrdinate(1)) == ((int)b.getOrdinate(1));
+    }
+
+    /**
      * Return true if the values of the two vectors are equal when cast as ints.
      *
      * @param a first vector to compare
@@ -549,7 +609,7 @@ public final class JtsAdapter {
      * @return true if the values of the two vectors are equal when cast as ints
      */
     private static boolean equalAsInts(Vec2d a, Vec2d b) {
-        return (int) b.x == (int) a.x && (int) b.y == (int) a.y;
+        return ((int) a.x) == ((int) b.x) && ((int) a.y) == ((int) b.y);
     }
 
     /**
