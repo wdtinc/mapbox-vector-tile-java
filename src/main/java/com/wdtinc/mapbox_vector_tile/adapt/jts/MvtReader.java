@@ -133,8 +133,11 @@ public final class MvtReader {
             return null;
         }
 
+        /** Geometry command index */
+        int i = 0;
+
         // Read command header
-        final int cmdHdr = geomCmds.get(0);
+        final int cmdHdr = geomCmds.get(i++);
         final int cmdLength = GeomCmdHdr.getCmdLength(cmdHdr);
         final GeomCmd cmd = GeomCmdHdr.getCmd(cmdHdr);
 
@@ -155,15 +158,16 @@ public final class MvtReader {
         }
 
         final CoordinateSequence coordSeq = geomFactory.getCoordinateSequenceFactory().create(cmdLength, 2);
+        int coordIndex = 0;
         Coordinate nextCoord;
 
-        for(int i = 0; i < cmdLength; ++i) {
+        while(i < geomCmds.size() - 1) {
             cursor.add(
-                    ZigZag.decode(geomCmds.get(i * 2)),
-                    ZigZag.decode(geomCmds.get(i * 2 + 1))
+                    ZigZag.decode(geomCmds.get(i++)),
+                    ZigZag.decode(geomCmds.get(i++))
             );
 
-            nextCoord = coordSeq.getCoordinate(i);
+            nextCoord = coordSeq.getCoordinate(coordIndex++);
             nextCoord.setOrdinate(0, cursor.x);
             nextCoord.setOrdinate(1, cursor.y);
         }

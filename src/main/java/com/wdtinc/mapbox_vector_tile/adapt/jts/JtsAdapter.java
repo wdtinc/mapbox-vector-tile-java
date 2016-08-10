@@ -450,7 +450,7 @@ public final class JtsAdapter {
 
         } else {
 
-            // Invalid geometry, need at least 1 'LineTo' value to make a Multiline or Polygon
+            // Invalid geometry, need at least 1 'MoveTo' value to make points
             return Collections.emptyList();
         }
     }

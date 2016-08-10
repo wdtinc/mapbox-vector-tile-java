@@ -11,6 +11,7 @@
 
     <name>Mapbox Vector Tiles - Java</name>
     <description>Mapbox Vector Tile Support for Java.</description>
+    <url>https://github.com/wdtinc/mapbox-vector-tile-java</url>
 
     <licenses>
         <license>
@@ -30,36 +31,36 @@
         </developer>
     </developers>
 
+    <scm>
+        <connection>scm:git:git://github.com/wdtinc/mapbox-vector-tile-java.git</connection>
+        <developerConnection>scm:git:ssh://github.com:wdtinc/mapbox-vector-tile-java.git</developerConnection>
+        <url>https://github.com/wdtinc/mapbox-vector-tile-java</url>
+    </scm>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <repositories>
         <repository>
-            <id>wdt-artifactory</id>
-            <name>WDT Private Repository</name>
-            <url>https://artifactory.aws.wdtinc.com/artifactory/libs-all</url>
+            <id>central</id>
+            <name>Maven Central</name>
+            <url>http://repo1.maven.org/maven2/</url>
             <releases>
                 <enabled>true</enabled>
                 <checksumPolicy>warn</checksumPolicy>
             </releases>
-            <snapshots>
-                <enabled>true</enabled>
-                <checksumPolicy>warn</checksumPolicy>
-            </snapshots>
         </repository>
     </repositories>
 
     <distributionManagement>
         <snapshotRepository>
-            <id>deploymentRepo</id>
-            <name>WDT Internal Snapshots</name>
-            <url>https://artifactory.aws.wdtinc.com/artifactory/libs-snapshot-local</url>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
         <repository>
-            <id>deploymentRepo</id>
-            <name>WDT Internal Releases</name>
-            <url>https://artifactory.aws.wdtinc.com/artifactory/libs-release-local</url>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
     </distributionManagement>
 
@@ -110,20 +111,58 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>1.5</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>1.6.7</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>ossrh</serverId>
+                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
     <dependencies>
+
+        <!-- Logging API -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>1.7.20</version>
         </dependency>
+
+        <!-- MVT encoding -->
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
             <version>3.0.0-beta-2</version>
         </dependency>
+
+        <!-- Geometry model -->
+        <dependency>
+            <groupId>com.vividsolutions</groupId>
+            <artifactId>jts-core</artifactId>
+            <version>1.14.0</version>
+        </dependency>
+
+        <!-- Testing -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -136,10 +175,6 @@
             <version>1.7.12</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.vividsolutions</groupId>
-            <artifactId>jts-core</artifactId>
-            <version>1.14.0</version>
-        </dependency>
+
     </dependencies>
 </project>

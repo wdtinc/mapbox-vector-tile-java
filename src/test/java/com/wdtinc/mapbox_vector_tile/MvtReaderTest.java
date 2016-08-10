@@ -14,29 +14,27 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
+/**
+ * Test reading MVTs.
+ */
 public final class MvtReaderTest {
 
     @Test
     public void simpleTest() {
-//        try {
-//            GeometryFactory geometryFactory = new GeometryFactory();
-//            final List<Geometry> geoms = MvtReader.loadMvt(Paths.get("src/test/resources/vec_tile_test/0/0/L5_X7_Y13_dp.mvt"),
-//                    geometryFactory, new TagKeyValueMapConverter());
-//            final List<Geometry> geoms2 = MvtReader.loadMvt(Paths.get("src/test/resources/vec_tile_test/0/0/L5_X7_Y13_tps.mvt"),
-//                    geometryFactory, new TagKeyValueMapConverter());
+        try {
 
-//            geoms.forEach(g -> {
-//                System.out.println(g);
-//                System.out.println(g.getUserData());
-//            });
+            // Load multipolygon z0 tile
+            final List<Geometry> geoms = MvtReader.loadMvt(
+                    Paths.get("src/test/resources/vec_tile_test/0/0/0.mvt"),
+                    new GeometryFactory(),
+                    new TagKeyValueMapConverter());
 
-//            final JtsGeomStats stats = JtsGeomStats.getStats(geoms);
-//            final JtsGeomStats stats2 = JtsGeomStats.getStats(geoms2);
-//            LoggerFactory.getLogger(MvtReaderTest.class).info("Stats DP: {}", stats);
-//            LoggerFactory.getLogger(MvtReaderTest.class).info("Stats TPS: {}", stats2);
-//
-//        } catch (IOException e) {
-//            fail(e.getMessage());
-//        }
+            // Debug stats of multipolygon
+            final JtsGeomStats stats = JtsGeomStats.getStats(geoms);
+            LoggerFactory.getLogger(MvtReaderTest.class).info("Stats: {}", stats);
+
+        } catch (IOException e) {
+            fail(e.getMessage());
+        }
     }
 }

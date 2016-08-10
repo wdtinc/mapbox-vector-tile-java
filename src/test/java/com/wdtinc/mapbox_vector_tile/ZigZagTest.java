@@ -5,6 +5,9 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
+/**
+ * Test zig zag encoding function.
+ */
 public final class ZigZagTest {
 
     @Test

@@ -8,10 +8,13 @@ import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
+/**
+ * Test MVT utility functions.
+ */
 public final class MvtUtilTest {
 
     @Test
-    public void test() {
+    public void testHeaders() {
         assertEquals(GeomCmdHdr.cmdHdr(GeomCmd.MoveTo, 1), 9);
         assertEquals(GeomCmdHdr.cmdHdr(GeomCmd.MoveTo, 1) >> 3, 1);
 
