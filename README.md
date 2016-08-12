@@ -13,6 +13,20 @@ See:
  * https://developers.google.com/protocol-buffers/ for details on protoc.
  * http://www.vividsolutions.com/jts/ for details on JTS.
 
+### Dependency
+
+#### Maven
+
+<dependency>
+    <groupId>com.wdtinc</groupId>
+    <artifactId>mapbox-vector-tile</artifactId>
+    <version>1.0</version>
+</dependency>
+
+#### Gradle
+
+compile 'com.wdtinc:mapbox-vector-tile:1.0'
+
 ### Reading MVTs
 
 Use MvtReader.loadMvt() to load MVT data from a path or input stream
