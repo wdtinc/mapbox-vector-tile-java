@@ -122,9 +122,16 @@ These options were added to the .proto file:
  * option java_package = "com.wdtinc.mapbox_vector_tile";
  * option java_outer_classname = "VectorTile";
 
-## Reporting Issues
+## Issues
+
+#### Reporting
 
 Use the Github issue tracker.
+
+#### Known Issues
+
+ * Creating tile geometry with non-simple line strings that self-cross in many places will be 'noded' by JTS during an intersection operation. This results in ugly output.
+ * Invalid or non-simple geometry may not work correctly with JTS operations when creating tile geometry.
 
 ## Contributing
 
