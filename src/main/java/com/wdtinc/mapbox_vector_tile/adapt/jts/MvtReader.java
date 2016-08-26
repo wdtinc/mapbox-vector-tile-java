@@ -383,7 +383,8 @@ public final class MvtReader {
 
 
         // Classify rings
-        final List<Polygon> polygons = classifyRings(rings, geomFactory);
+//        final List<Polygon> polygons = classifyRings(rings, geomFactory);
+        final List<Polygon> polygons = classifyRingsV1(rings, geomFactory);
         if(polygons.size() < 1) {
             return null;
 
@@ -425,6 +426,66 @@ public final class MvtReader {
             }
 
             if(area > 0d) {
+                if(outerPoly != null) {
+                    polygons.add(geomFactory.createPolygon(outerPoly, holes.toArray(new LinearRing[holes.size()])));
+                    holes.clear();
+                }
+
+                // Pos --> CCW, Outer
+                outerPoly = r;
+                outerArea = area;
+
+            } else {
+
+                if(Math.abs(outerArea) < Math.abs(area)) {
+                    continue; // Holes must have less area, could probably be handled in a isSimple() check
+                }
+
+                // Neg --> CW, Hole
+                holes.add(r);
+            }
+        }
+
+        if(outerPoly != null) {
+            holes.toArray();
+            polygons.add(geomFactory.createPolygon(outerPoly, holes.toArray(new LinearRing[holes.size()])));
+        }
+
+        return polygons;
+    }
+
+    /**
+     * <p>Classify a list of rings into polygons using surveyor formula.</p>
+     *
+     * <p>Zero-area polygons are removed.</p>
+     *
+     * <p>Supports V1 vector tiles.</p>
+     *
+     * @param rings linear rings to classify into polygons
+     * @param geomFactory creates JTS geometry
+     * @return polygons from classified rings
+     * @see CGAlgorithms#signedArea(Coordinate[])
+     */
+    private static List<Polygon> classifyRingsV1(List<LinearRing> rings, GeometryFactory geomFactory) {
+        final List<Polygon> polygons = new ArrayList<>();
+        final List<LinearRing> holes = new ArrayList<>();
+
+        double outerArea = 0d;
+        LinearRing outerPoly = null;
+
+        for(LinearRing r : rings) {
+            double area = CGAlgorithms.signedArea(r.getCoordinates());
+
+            if(!r.isRing()) {
+                continue; // sanity check, could probably be handled in a isSimple() check
+            }
+
+            if(area == 0d) {
+                continue; // zero-area
+            }
+
+//            if(area > 0d) {
+            if(outerPoly == null || (outerArea < 0 == area < 0)) {
                 if(outerPoly != null) {
                     polygons.add(geomFactory.createPolygon(outerPoly, holes.toArray(new LinearRing[holes.size()])));
                     holes.clear();
