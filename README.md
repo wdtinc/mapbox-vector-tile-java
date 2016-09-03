@@ -45,6 +45,14 @@ List<Geometry> geoms = MvtReader.loadMvt(
         Paths.get("path/to/your.mvt"),
         geomFactory,
         new TagKeyValueMapConverter());
+
+
+// Allow negative-area exterior rings with classifier
+List<Geometry> geoms = MvtReader.loadMvt(
+        Paths.get("path/to/your.mvt"),
+        geomFactory,
+        new TagKeyValueMapConverter(),
+        MvtReader.RING_CLASSIFIER_V1);
 ```
 
 ### Building and Writing MVTs
