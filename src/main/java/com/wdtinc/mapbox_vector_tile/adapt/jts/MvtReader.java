@@ -25,26 +25,50 @@ public final class MvtReader {
     private static final int MIN_LINE_STRING_LEN = 6; // MoveTo,1 + LineTo,1
     private static final int MIN_POLYGON_LEN = 9; // MoveTo,1 + LineTo,2 + ClosePath
 
-
     /**
      * Convenience method for loading MVT from file.
-     * See {@link #loadMvt(InputStream, GeometryFactory, ITagConverter)}.
+     * See {@link #loadMvt(InputStream, GeometryFactory, ITagConverter, RingClassifier)}.
+     * Uses {@link #RING_CLASSIFIER_V2_1} for forming Polygons and MultiPolygons.
      *
      * @param p path to the MVT
      * @param geomFactory allows for JTS geometry creation
      * @param tagConverter converts MVT feature tags to JTS user data object
      * @return JTS geometries in using MVT coordinates
      * @throws IOException failure reading MVT from path
-     * @see #loadMvt(InputStream, GeometryFactory, ITagConverter)
+     * @see #loadMvt(InputStream, GeometryFactory, ITagConverter, RingClassifier)
      * @see Geometry
      * @see Geometry#getUserData()
+     * @see RingClassifier
      */
-    public static List<Geometry> loadMvt(Path p, GeometryFactory geomFactory,
+    public static List<Geometry> loadMvt(Path p,
+                                         GeometryFactory geomFactory,
                                          ITagConverter tagConverter) throws IOException {
+        return loadMvt(p, geomFactory, tagConverter, RING_CLASSIFIER_V2_1);
+    }
+
+    /**
+     * Convenience method for loading MVT from file.
+     * See {@link #loadMvt(InputStream, GeometryFactory, ITagConverter, RingClassifier)}.
+     *
+     * @param p path to the MVT
+     * @param geomFactory allows for JTS geometry creation
+     * @param tagConverter converts MVT feature tags to JTS user data object
+     * @param ringClassifier determines how rings are parsed into Polygons and MultiPolygons
+     * @return JTS geometries in using MVT coordinates
+     * @throws IOException failure reading MVT from path
+     * @see #loadMvt(InputStream, GeometryFactory, ITagConverter, RingClassifier)
+     * @see Geometry
+     * @see Geometry#getUserData()
+     * @see RingClassifier
+     */
+    public static List<Geometry> loadMvt(Path p,
+                                         GeometryFactory geomFactory,
+                                         ITagConverter tagConverter,
+                                         RingClassifier ringClassifier) throws IOException {
         final List<Geometry> geometries;
 
         try(final InputStream is = new FileInputStream(p.toFile())) {
-            geometries = loadMvt(is, geomFactory, tagConverter);
+            geometries = loadMvt(is, geomFactory, tagConverter, ringClassifier);
         }
 
         return geometries;
@@ -52,7 +76,7 @@ public final class MvtReader {
 
     /**
      * Load an MVT to JTS geometries using coordinates. Uses {@code tagConverter} to create user data
-     * from feature properties.
+     * from feature properties. Uses {@link #RING_CLASSIFIER_V2_1} for forming Polygons and MultiPolygons.
      *
      * @param is stream with MVT data
      * @param geomFactory allows for JTS geometry creation
@@ -61,9 +85,33 @@ public final class MvtReader {
      * @throws IOException failure reading MVT from stream
      * @see Geometry
      * @see Geometry#getUserData()
+     * @see RingClassifier
      */
-    public static List<Geometry> loadMvt(InputStream is, GeometryFactory geomFactory,
+    public static List<Geometry> loadMvt(InputStream is,
+                                         GeometryFactory geomFactory,
                                          ITagConverter tagConverter) throws IOException {
+        return loadMvt(is, geomFactory, tagConverter, RING_CLASSIFIER_V2_1);
+    }
+
+
+    /**
+     * Load an MVT to JTS geometries using coordinates. Uses {@code tagConverter} to create user data
+     * from feature properties.
+     *
+     * @param is stream with MVT data
+     * @param geomFactory allows for JTS geometry creation
+     * @param tagConverter converts MVT feature tags to JTS user data object.
+     * @param ringClassifier determines how rings are parsed into Polygons and MultiPolygons
+     * @return JTS geometries in using MVT coordinates
+     * @throws IOException failure reading MVT from stream
+     * @see Geometry
+     * @see Geometry#getUserData()
+     * @see RingClassifier
+     */
+    public static List<Geometry> loadMvt(InputStream is,
+                                         GeometryFactory geomFactory,
+                                         ITagConverter tagConverter,
+                                         RingClassifier ringClassifier) throws IOException {
 
         final List<Geometry> tileGeoms = new ArrayList<>();
         final VectorTile.Tile mvt = VectorTile.Tile.parseFrom(is);
@@ -86,7 +134,7 @@ public final class MvtReader {
 
                 final List<Integer> geomCmds = nextFeature.getGeometryList();
                 cursor.set(0d, 0d);
-                final Geometry nextGeom = readGeometry(geomCmds, geomType, geomFactory, cursor);
+                final Geometry nextGeom = readGeometry(geomCmds, geomType, geomFactory, cursor, ringClassifier);
                 if(nextGeom != null) {
                     tileGeoms.add(nextGeom);
                     nextGeom.setUserData(tagConverter.toUserData(id, nextFeature.getTagsList(), keysList, valuesList));
@@ -97,8 +145,11 @@ public final class MvtReader {
         return tileGeoms;
     }
 
-    private static Geometry readGeometry(List<Integer> geomCmds, VectorTile.Tile.GeomType geomType,
-                             GeometryFactory geomFactory, Vec2d cursor) {
+    private static Geometry readGeometry(List<Integer> geomCmds,
+                                         VectorTile.Tile.GeomType geomType,
+                                         GeometryFactory geomFactory,
+                                         Vec2d cursor,
+                                         RingClassifier ringClassifier) {
         Geometry result = null;
 
         switch(geomType) {
@@ -109,7 +160,7 @@ public final class MvtReader {
                 result = readLines(geomFactory, geomCmds, cursor);
                 break;
             case POLYGON:
-                result = readPolys(geomFactory, geomCmds, cursor);
+                result = readPolys(geomFactory, geomCmds, cursor, ringClassifier);
                 break;
             default:
                 LoggerFactory.getLogger(MvtReader.class).error("readGeometry(): Unhandled geometry type [{}]", geomType);
@@ -276,9 +327,13 @@ public final class MvtReader {
      * @param geomFactory creates JTS geometry
      * @param geomCmds contains MVT geometry commands
      * @param cursor contains current MVT extent position
+     * @param ringClassifier
      * @return JTS geometry or null on failure
      */
-    private static Geometry readPolys(GeometryFactory geomFactory, List<Integer> geomCmds, Vec2d cursor) {
+    private static Geometry readPolys(GeometryFactory geomFactory,
+                                      List<Integer> geomCmds,
+                                      Vec2d cursor,
+                                      RingClassifier ringClassifier) {
 
         // Guard: must have header
         if(geomCmds.isEmpty()) {
@@ -383,8 +438,7 @@ public final class MvtReader {
 
 
         // Classify rings
-//        final List<Polygon> polygons = classifyRings(rings, geomFactory);
-        final List<Polygon> polygons = classifyRingsV1(rings, geomFactory);
+        final List<Polygon> polygons = ringClassifier.classifyRings(rings, geomFactory);
         if(polygons.size() < 1) {
             return null;
 
@@ -398,119 +452,141 @@ public final class MvtReader {
 
 
     /**
-     * <p>Classify a list of rings into polygons using surveyor formula.</p>
-     *
-     * <p>Zero-area polygons are removed.</p>
-     *
-     * @param rings linear rings to classify into polygons
-     * @param geomFactory creates JTS geometry
-     * @return polygons from classified rings
-     * @see CGAlgorithms#signedArea(Coordinate[])
+     * Classifies Polygon and MultiPolygon rings.
      */
-    private static List<Polygon> classifyRings(List<LinearRing> rings, GeometryFactory geomFactory) {
-        final List<Polygon> polygons = new ArrayList<>();
-        final List<LinearRing> holes = new ArrayList<>();
+    @FunctionalInterface
+    public interface RingClassifier {
 
-        double outerArea = 0d;
-        LinearRing outerPoly = null;
-
-        for(LinearRing r : rings) {
-            double area = CGAlgorithms.signedArea(r.getCoordinates());
-
-            if(!r.isRing()) {
-                continue; // sanity check, could probably be handled in a isSimple() check
-            }
-
-            if(area == 0d) {
-                continue; // zero-area
-            }
-
-            if(area > 0d) {
-                if(outerPoly != null) {
-                    polygons.add(geomFactory.createPolygon(outerPoly, holes.toArray(new LinearRing[holes.size()])));
-                    holes.clear();
-                }
-
-                // Pos --> CCW, Outer
-                outerPoly = r;
-                outerArea = area;
-
-            } else {
-
-                if(Math.abs(outerArea) < Math.abs(area)) {
-                    continue; // Holes must have less area, could probably be handled in a isSimple() check
-                }
-
-                // Neg --> CW, Hole
-                holes.add(r);
-            }
-        }
-
-        if(outerPoly != null) {
-            holes.toArray();
-            polygons.add(geomFactory.createPolygon(outerPoly, holes.toArray(new LinearRing[holes.size()])));
-        }
-
-        return polygons;
+        /**
+         * <p>Classify a list of rings into polygons using surveyor formula.</p>
+         *
+         * <p>Zero-area polygons are removed.</p>
+         *
+         * @param rings linear rings to classify into polygons
+         * @param geomFactory creates JTS geometry
+         * @return polygons from classified rings
+         */
+        List<Polygon> classifyRings(List<LinearRing> rings, GeometryFactory geomFactory);
     }
 
+
+    /** Area for surveyor formula may be positive or negative for exterior rings. Mimics Mapbox parsers supporting V1. */
+    public static final RingClassifier RING_CLASSIFIER_V1 = new PolyRingClassifierV1();
+
+    /** Area from surveyor formula must be positive for exterior rings. Obeys V2.1 spec. */
+    public static final RingClassifier RING_CLASSIFIER_V2_1 = new PolyRingClassifierV2_1();
+
+
     /**
-     * <p>Classify a list of rings into polygons using surveyor formula.</p>
+     * Area from surveyor formula must be positive for exterior rings. Obeys V2.1 spec.
      *
-     * <p>Zero-area polygons are removed.</p>
-     *
-     * <p>Supports V1 vector tiles.</p>
-     *
-     * @param rings linear rings to classify into polygons
-     * @param geomFactory creates JTS geometry
-     * @return polygons from classified rings
      * @see CGAlgorithms#signedArea(Coordinate[])
      */
-    private static List<Polygon> classifyRingsV1(List<LinearRing> rings, GeometryFactory geomFactory) {
-        final List<Polygon> polygons = new ArrayList<>();
-        final List<LinearRing> holes = new ArrayList<>();
+    private static final class PolyRingClassifierV2_1 implements RingClassifier {
 
-        double outerArea = 0d;
-        LinearRing outerPoly = null;
+        @Override
+        public List<Polygon> classifyRings(List<LinearRing> rings, GeometryFactory geomFactory) {
+            final List<Polygon> polygons = new ArrayList<>();
+            final List<LinearRing> holes = new ArrayList<>();
 
-        for(LinearRing r : rings) {
-            double area = CGAlgorithms.signedArea(r.getCoordinates());
+            double outerArea = 0d;
+            LinearRing outerPoly = null;
 
-            if(!r.isRing()) {
-                continue; // sanity check, could probably be handled in a isSimple() check
-            }
+            for(LinearRing r : rings) {
+                double area = CGAlgorithms.signedArea(r.getCoordinates());
 
-            if(area == 0d) {
-                continue; // zero-area
-            }
-
-//            if(area > 0d) {
-            if(outerPoly == null || (outerArea < 0 == area < 0)) {
-                if(outerPoly != null) {
-                    polygons.add(geomFactory.createPolygon(outerPoly, holes.toArray(new LinearRing[holes.size()])));
-                    holes.clear();
+                if(!r.isRing()) {
+                    continue; // sanity check, could probably be handled in a isSimple() check
                 }
 
-                // Pos --> CCW, Outer
-                outerPoly = r;
-                outerArea = area;
-
-            } else {
-
-                if(Math.abs(outerArea) < Math.abs(area)) {
-                    continue; // Holes must have less area, could probably be handled in a isSimple() check
+                if(area == 0d) {
+                    continue; // zero-area
                 }
 
-                // Neg --> CW, Hole
-                holes.add(r);
+                if(area > 0d) {
+                    if(outerPoly != null) {
+                        polygons.add(geomFactory.createPolygon(outerPoly, holes.toArray(new LinearRing[holes.size()])));
+                        holes.clear();
+                    }
+
+                    // Pos --> CCW, Outer
+                    outerPoly = r;
+                    outerArea = area;
+
+                } else {
+
+                    if(Math.abs(outerArea) < Math.abs(area)) {
+                        continue; // Holes must have less area, could probably be handled in a isSimple() check
+                    }
+
+                    // Neg --> CW, Hole
+                    holes.add(r);
+                }
             }
-        }
 
-        if(outerPoly != null) {
-            holes.toArray();
-            polygons.add(geomFactory.createPolygon(outerPoly, holes.toArray(new LinearRing[holes.size()])));
-        }
+            if(outerPoly != null) {
+                holes.toArray();
+                polygons.add(geomFactory.createPolygon(outerPoly, holes.toArray(new LinearRing[holes.size()])));
+            }
 
-        return polygons;
+            return polygons;
+        }
+    }
+
+
+    /**
+     * Area for surveyor formula may be positive or negative for exterior rings. Mimics Mapbox parsers supporting V1.
+     *
+     * @see CGAlgorithms#signedArea(Coordinate[])
+     */
+    private static final class PolyRingClassifierV1 implements RingClassifier {
+
+        @Override
+        public List<Polygon> classifyRings(List<LinearRing> rings, GeometryFactory geomFactory) {
+            final List<Polygon> polygons = new ArrayList<>();
+            final List<LinearRing> holes = new ArrayList<>();
+
+            double outerArea = 0d;
+            LinearRing outerPoly = null;
+
+            for(LinearRing r : rings) {
+                double area = CGAlgorithms.signedArea(r.getCoordinates());
+
+                if(!r.isRing()) {
+                    continue; // sanity check, could probably be handled in a isSimple() check
+                }
+
+                if(area == 0d) {
+                    continue; // zero-area
+                }
+
+                if(outerPoly == null || (outerArea < 0 == area < 0)) {
+                    if(outerPoly != null) {
+                        polygons.add(geomFactory.createPolygon(outerPoly, holes.toArray(new LinearRing[holes.size()])));
+                        holes.clear();
+                    }
+
+                    // Pos --> CCW, Outer
+                    outerPoly = r;
+                    outerArea = area;
+
+                } else {
+
+                    if(Math.abs(outerArea) < Math.abs(area)) {
+                        continue; // Holes must have less area, could probably be handled in a isSimple() check
+                    }
+
+                    // Neg --> CW, Hole
+                    holes.add(r);
+                }
+            }
+
+            if(outerPoly != null) {
+                holes.toArray();
+                polygons.add(geomFactory.createPolygon(outerPoly, holes.toArray(new LinearRing[holes.size()])));
+            }
+
+            return polygons;
+        }
     }
 }
