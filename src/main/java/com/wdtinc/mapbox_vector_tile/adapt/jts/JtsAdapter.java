@@ -120,7 +120,7 @@ public final class JtsAdapter {
     }
 
     /**
-     * JTS does not support intersection on a {@link GeometryCollection}. This function works around this
+     * JTS 1.14 does not support intersection on a {@link GeometryCollection}. This function works around this
      * by performing intersection on a flat list of geometry. The resulting list is pre-filtered for invalid
      * or empty geometry (outside of bounds). Invalid geometry are logged as errors.
      *
@@ -219,7 +219,7 @@ public final class JtsAdapter {
             } else if(nextGeom instanceof GeometryCollection) {
 
                 // Push all child geometries
-                nextGeomCount = geom.getNumGeometries();
+                nextGeomCount = nextGeom.getNumGeometries();
                 for(int i = 0; i < nextGeomCount; ++i) {
                     geomStack.push(nextGeom.getGeometryN(i));
                 }
