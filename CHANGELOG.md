@@ -1,4 +1,10 @@
 
+## 1.1.1 (Nov 1 2016)
+
+#### Fixes
+
+- Fix issue with JtsAdapter#flatFeatureList(Geometry) using wrong count for flattening GeometryCollection.
+
 ## 1.1.0 (Sep 2 2016)
 
 #### Features
