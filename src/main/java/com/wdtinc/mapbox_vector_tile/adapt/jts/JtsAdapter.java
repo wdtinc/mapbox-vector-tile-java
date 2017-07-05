@@ -25,6 +25,9 @@ public final class JtsAdapter {
      * Create geometry clipped and then converted to MVT 'extent' coordinates. Result
      * contains both clipped geometry (intersection) and transformed geometry for encoding to MVT.
      *
+     * <p>Uses the same tile and clipping coordinates. May cause rendering issues on boundaries for polygons
+     * or line geometry depending on styling.</p>
+     *
      * @param g original 'source' geometry
      * @param tileEnvelope world coordinate bounds for tile
      * @param geomFactory creates a geometry for the tile envelope
@@ -43,8 +46,11 @@ public final class JtsAdapter {
     }
 
     /**
-     * Create geometry clipped and then converted to MVT 'extent' coordinates. Result
-     * contains both clipped geometry (intersection) and transformed geometry for encoding to MVT.
+     * <p>Create geometry clipped and then converted to MVT 'extent' coordinates. Result
+     * contains both clipped geometry (intersection) and transformed geometry for encoding to MVT.</p>
+     *
+     * <p>Uses the same tile and clipping coordinates. May cause rendering issues on boundaries for polygons
+     * or line geometry depending on styling.</p>
      *
      * @param g original 'source' geometry, passed through {@link #flatFeatureList(Geometry)}
      * @param tileEnvelope world coordinate bounds for tile
@@ -59,8 +65,33 @@ public final class JtsAdapter {
                                                 GeometryFactory geomFactory,
                                                 MvtLayerParams mvtLayerParams,
                                                 IGeometryFilter filter) {
+        return createTileGeom(g, tileEnvelope, tileEnvelope, geomFactory, mvtLayerParams, filter);
+    }
 
-        final Geometry tileEnvelopeGeom = geomFactory.toGeometry(tileEnvelope);
+    /**
+     * <p>Create geometry clipped and then converted to MVT 'extent' coordinates. Result
+     * contains both clipped geometry (intersection) and transformed geometry for encoding to MVT.</p>
+     *
+     * <p>Allows specifying separate tile and clipping coordinates. {@code clipEnvelope} can be bigger than
+     * {@code tileEnvelope} to have geometry exist outside the MVT tile extent.</p>
+     *
+     * @param g original 'source' geometry, passed through {@link #flatFeatureList(Geometry)}
+     * @param tileEnvelope world coordinate bounds for tile, used for transforms
+     * @param clipEnvelope world coordinates to clip tile by
+     * @param geomFactory creates a geometry for the tile envelope
+     * @param mvtLayerParams specifies vector tile properties
+     * @param filter geometry values that fail filter after transforms are removed
+     * @return tile geometry result
+     * @see TileGeomResult
+     */
+    public static TileGeomResult createTileGeom(List<Geometry> g,
+                                                Envelope tileEnvelope,
+                                                Envelope clipEnvelope,
+                                                GeometryFactory geomFactory,
+                                                MvtLayerParams mvtLayerParams,
+                                                IGeometryFilter filter) {
+
+        final Geometry tileClipGeom = geomFactory.toGeometry(clipEnvelope);
 
         final AffineTransformation t = new AffineTransformation();
         final double xDiff = tileEnvelope.getWidth();
@@ -80,8 +111,8 @@ public final class JtsAdapter {
         t.translate(0d, (double) mvtLayerParams.extent);
 
 
-        // The area contained in BOTH the 'original geometry', g, AND the 'tile envelope geometry' is the 'tile geometry'
-        final List<Geometry> intersectedGeoms = flatIntersection(tileEnvelopeGeom, g);
+        // The area contained in BOTH the 'original geometry', g, AND the 'clip envelope geometry' is the 'tile geometry'
+        final List<Geometry> intersectedGeoms = flatIntersection(tileClipGeom, g);
         final List<Geometry> transformedGeoms = new ArrayList<>(intersectedGeoms.size());
 
         // Transform intersected geometry

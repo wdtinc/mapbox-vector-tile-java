@@ -130,6 +130,48 @@ public final class MvtBuildTest {
         assertEquals(geoms, tileGeom.mvtGeoms);
     }
 
+    @Test
+    public void testBufferedPolygon() throws IOException {
+
+        // Create input geometry
+        final GeometryFactory geomFactory = new GeometryFactory();
+        final Geometry inputGeom = buildPolygon(RANDOM, 200, geomFactory);
+
+        // Build tile envelope - 1 quadrant of the world
+        final double tileWidth = WORLD_SIZE * .5d;
+        final double tileHeight = WORLD_SIZE * .5d;
+        final Envelope tileEnvelope = new Envelope(0d, tileWidth, 0d, tileHeight);
+
+        // Build clip envelope - (10 * 2)% buffered area of the tile envelope
+        final Envelope clipEnvelope = new Envelope(tileEnvelope);
+        final double bufferWidth = tileWidth * .1f;
+        final double bufferHeight = tileHeight * .1f;
+        clipEnvelope.expandBy(bufferWidth, bufferHeight);
+
+        // Build buffered MVT tile geometry
+        final TileGeomResult bufferedTileGeom = JtsAdapter.createTileGeom(
+                JtsAdapter.flatFeatureList(inputGeom),
+                tileEnvelope, clipEnvelope, geomFactory,
+                DEFAULT_MVT_PARAMS, ACCEPT_ALL_FILTER);
+
+        // Create MVT layer
+        final VectorTile.Tile mvt = encodeMvt(DEFAULT_MVT_PARAMS, bufferedTileGeom);
+
+        // MVT Bytes
+        final byte[] bytes = mvt.toByteArray();
+
+        assertNotNull(bytes);
+
+        // Load multipolygon z0 tile
+        final List<Geometry> geoms = MvtReader.loadMvt(
+                new ByteArrayInputStream(bytes),
+                new GeometryFactory(),
+                new TagKeyValueMapConverter());
+
+        // Check that MVT geometries are the same as the ones that were encoded above
+        assertEquals(geoms, bufferedTileGeom.mvtGeoms);
+    }
+
     private static MultiPoint buildMultiPoint(Random random, int pointCount, GeometryFactory geomFactory) {
         final CoordinateSequence coordSeq = getCoordSeq(random, pointCount, geomFactory);
         return geomFactory.createMultiPoint(coordSeq);
