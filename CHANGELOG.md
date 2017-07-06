@@ -1,4 +1,10 @@
 
+## 1.2.0 (Jul 6 2017)
+
+#### Features
+
+- Add support for clipping outside of MVT extent.
+
 ## 1.1.1 (Nov 1 2016)
 
 #### Fixes
