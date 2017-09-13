@@ -185,8 +185,8 @@ public final class MvtReader {
      * @see RingClassifier
      */
     public static LayerGroup loadMvtWithLayers(Path p,
-                                         GeometryFactory geomFactory,
-                                         ITagConverter tagConverter) throws IOException {
+                                               GeometryFactory geomFactory,
+                                               ITagConverter tagConverter) throws IOException {
         return loadMvtWithLayers(p, geomFactory, tagConverter, RING_CLASSIFIER_V2_1);
     }
 
@@ -206,9 +206,9 @@ public final class MvtReader {
      * @see RingClassifier
      */
     public static LayerGroup loadMvtWithLayers(Path p,
-                                         GeometryFactory geomFactory,
-                                         ITagConverter tagConverter,
-                                         RingClassifier ringClassifier) throws IOException {
+                                               GeometryFactory geomFactory,
+                                               ITagConverter tagConverter,
+                                               RingClassifier ringClassifier) throws IOException {
         final LayerGroup layerGroup;
 
         try(final InputStream is = new FileInputStream(p.toFile())) {
@@ -253,9 +253,9 @@ public final class MvtReader {
      * @see RingClassifier
      */
     public static LayerGroup loadMvtWithLayers(InputStream is,
-                                         GeometryFactory geomFactory,
-                                         ITagConverter tagConverter,
-                                         RingClassifier ringClassifier) throws IOException {
+                                               GeometryFactory geomFactory,
+                                               ITagConverter tagConverter,
+                                               RingClassifier ringClassifier) throws IOException {
         LayerGroup layerGroup = new LayerGroup();
         loadMvt(is, geomFactory, tagConverter, ringClassifier, (layerName, geometry) -> {
             Layer layer = layerGroup.getLayer(layerName);
