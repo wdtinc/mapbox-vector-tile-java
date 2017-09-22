@@ -4,10 +4,7 @@ import com.google.protobuf.ProtocolStringList;
 import com.wdtinc.mapbox_vector_tile.encoding.MvtValue;
 import com.wdtinc.mapbox_vector_tile.VectorTile;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Convert MVT tags list to a {@link Map} of {@link String} to {@link Object}. Tags indices that are out
@@ -68,7 +65,7 @@ public final class TagKeyValueMapConverter implements ITagConverter {
         }
 
 
-        final Map<String, Object> userData = new HashMap<>(((tags.size() + 1) / 2));
+        final Map<String, Object> userData = new LinkedHashMap<>(((tags.size() + 1) / 2));
 
         // Add feature properties
         int keyIndex;
