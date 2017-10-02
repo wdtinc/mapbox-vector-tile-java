@@ -1,8 +1,11 @@
-package com.wdtinc.mapbox_vector_tile;
+package com.wdtinc.mapbox_vector_tile.build;
 
 import com.vividsolutions.jts.algorithm.ConvexHull;
 import com.vividsolutions.jts.geom.*;
+import com.wdtinc.mapbox_vector_tile.VectorTile;
 import com.wdtinc.mapbox_vector_tile.adapt.jts.*;
+import com.wdtinc.mapbox_vector_tile.adapt.jts.model.JtsLayer;
+import com.wdtinc.mapbox_vector_tile.adapt.jts.model.JtsMvt;
 import com.wdtinc.mapbox_vector_tile.build.MvtLayerBuild;
 import com.wdtinc.mapbox_vector_tile.build.MvtLayerParams;
 import com.wdtinc.mapbox_vector_tile.build.MvtLayerProps;
@@ -10,22 +13,17 @@ import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Objects;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.*;
 
 /**
  * Test building MVTs.
  */
 public final class MvtBuildTest {
+
+    private static String TEST_LAYER_NAME = "layerNameHere";
 
     /** Fixed randomization with arbitrary seed value */
     private static final long SEED = 487125064L;
@@ -66,14 +64,16 @@ public final class MvtBuildTest {
 
         assertNotNull(bytes);
 
+        JtsMvt expected = new JtsMvt(singletonList(new JtsLayer(TEST_LAYER_NAME, tileGeom.mvtGeoms)));
+
         // Load multipolygon z0 tile
-        final List<Geometry> geoms = MvtReader.loadMvt(
+        JtsMvt actual = MvtReader.loadMvt(
                 new ByteArrayInputStream(bytes),
                 new GeometryFactory(),
                 new TagKeyValueMapConverter());
 
         // Check that MVT geometries are the same as the ones that were encoded above
-        assertEquals(geoms, tileGeom.mvtGeoms);
+        assertEquals(expected, actual);
     }
 
     @Test
@@ -98,14 +98,16 @@ public final class MvtBuildTest {
 
         assertNotNull(bytes);
 
+        JtsMvt expected = new JtsMvt(singletonList(new JtsLayer(TEST_LAYER_NAME, tileGeom.mvtGeoms)));
+
         // Load multipolygon z0 tile
-        final List<Geometry> geoms = MvtReader.loadMvt(
+        JtsMvt actual = MvtReader.loadMvt(
                 new ByteArrayInputStream(bytes),
                 new GeometryFactory(),
                 new TagKeyValueMapConverter());
 
         // Check that MVT geometries are the same as the ones that were encoded above
-        assertEquals(geoms, tileGeom.mvtGeoms);
+        assertEquals(expected, actual);
     }
 
     @Test
@@ -130,14 +132,16 @@ public final class MvtBuildTest {
 
         assertNotNull(bytes);
 
+        JtsMvt expected = new JtsMvt(singletonList(new JtsLayer(TEST_LAYER_NAME, tileGeom.mvtGeoms)));
+
         // Load multipolygon z0 tile
-        final List<Geometry> geoms = MvtReader.loadMvt(
+        JtsMvt actual = MvtReader.loadMvt(
                 new ByteArrayInputStream(bytes),
                 new GeometryFactory(),
                 new TagKeyValueMapConverter());
 
         // Check that MVT geometries are the same as the ones that were encoded above
-        assertEquals(geoms, tileGeom.mvtGeoms);
+        assertEquals(expected, actual);
     }
 
     @Test
@@ -172,14 +176,17 @@ public final class MvtBuildTest {
 
         assertNotNull(bytes);
 
+        JtsMvt expected = new JtsMvt(singletonList(
+                new JtsLayer(TEST_LAYER_NAME, bufferedTileGeom.mvtGeoms)));
+
         // Load multipolygon z0 tile
-        final List<Geometry> geoms = MvtReader.loadMvt(
+        JtsMvt actual = MvtReader.loadMvt(
                 new ByteArrayInputStream(bytes),
                 new GeometryFactory(),
                 new TagKeyValueMapConverter());
 
         // Check that MVT geometries are the same as the ones that were encoded above
-        assertEquals(geoms, bufferedTileGeom.mvtGeoms);
+        assertEquals(expected, actual);
     }
 
     @Test
@@ -191,7 +198,7 @@ public final class MvtBuildTest {
         String layer1Name = "Layer 1";
         String layer2Name = "Layer 2";
 
-        byte[] bytes = new Mvt.Builder()
+        byte[] bytes = new MvtWriter.Builder()
                 .setLayer(layer1Name)
                 .add(point1)
                 .add(point2)
@@ -201,7 +208,7 @@ public final class MvtBuildTest {
 
         assertNotNull(bytes);
 
-        LayerGroup layers = MvtReader.loadMvtWithLayers(new ByteArrayInputStream(bytes), new GeometryFactory(),
+        JtsMvt layers = MvtReader.loadMvt(new ByteArrayInputStream(bytes), new GeometryFactory(),
                 new TagKeyValueMapConverter());
 
         assertNotNull(layers.getLayer(layer1Name));
@@ -265,7 +272,7 @@ public final class MvtBuildTest {
         final VectorTile.Tile.Builder tileBuilder = VectorTile.Tile.newBuilder();
 
         // Create MVT layer
-        final VectorTile.Tile.Layer.Builder layerBuilder = MvtLayerBuild.newLayerBuilder("layerNameHere", mvtParams);
+        final VectorTile.Tile.Layer.Builder layerBuilder = MvtLayerBuild.newLayerBuilder(TEST_LAYER_NAME, mvtParams);
         final MvtLayerProps layerProps = new MvtLayerProps();
         final UserDataIgnoreConverter ignoreUserData = new UserDataIgnoreConverter();
 
@@ -284,7 +291,7 @@ public final class MvtBuildTest {
         return tileBuilder.build();
     }
 
-    private static class Mvt {
+    private static class MvtWriter {
 
         static class Builder {
             // Default MVT parameters

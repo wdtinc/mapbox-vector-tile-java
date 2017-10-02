@@ -3,6 +3,8 @@ package com.wdtinc.mapbox_vector_tile.adapt.jts;
 import com.google.protobuf.ProtocolStringList;
 import com.vividsolutions.jts.algorithm.CGAlgorithms;
 import com.vividsolutions.jts.geom.*;
+import com.wdtinc.mapbox_vector_tile.adapt.jts.model.JtsLayer;
+import com.wdtinc.mapbox_vector_tile.adapt.jts.model.JtsMvt;
 import com.wdtinc.mapbox_vector_tile.encoding.GeomCmd;
 import com.wdtinc.mapbox_vector_tile.VectorTile;
 import com.wdtinc.mapbox_vector_tile.encoding.GeomCmdHdr;
@@ -20,6 +22,9 @@ import java.util.List;
 /**
  * Load Mapbox Vector Tiles (MVT) to JTS {@link Geometry}. Feature tags may be converted
  * to user data via {@link ITagConverter}.
+ *
+ * @see JtsMvt
+ * @see JtsLayer
  */
 public final class MvtReader {
     private static final int MIN_LINE_STRING_LEN = 6; // MoveTo,1 + LineTo,1
@@ -33,16 +38,16 @@ public final class MvtReader {
      * @param p path to the MVT
      * @param geomFactory allows for JTS geometry creation
      * @param tagConverter converts MVT feature tags to JTS user data object
-     * @return JTS geometries in using MVT coordinates
+     * @return JTS MVT with geometry in MVT coordinates
      * @throws IOException failure reading MVT from path
      * @see #loadMvt(InputStream, GeometryFactory, ITagConverter, RingClassifier)
      * @see Geometry
      * @see Geometry#getUserData()
      * @see RingClassifier
      */
-    public static List<Geometry> loadMvt(Path p,
-                                         GeometryFactory geomFactory,
-                                         ITagConverter tagConverter) throws IOException {
+    public static JtsMvt loadMvt(Path p,
+                                 GeometryFactory geomFactory,
+                                 ITagConverter tagConverter) throws IOException {
         return loadMvt(p, geomFactory, tagConverter, RING_CLASSIFIER_V2_1);
     }
 
@@ -54,46 +59,45 @@ public final class MvtReader {
      * @param geomFactory allows for JTS geometry creation
      * @param tagConverter converts MVT feature tags to JTS user data object
      * @param ringClassifier determines how rings are parsed into Polygons and MultiPolygons
-     * @return JTS geometries in using MVT coordinates
+     * @return JTS MVT with geometry in MVT coordinates
      * @throws IOException failure reading MVT from path
      * @see #loadMvt(InputStream, GeometryFactory, ITagConverter, RingClassifier)
      * @see Geometry
      * @see Geometry#getUserData()
      * @see RingClassifier
      */
-    public static List<Geometry> loadMvt(Path p,
-                                         GeometryFactory geomFactory,
-                                         ITagConverter tagConverter,
-                                         RingClassifier ringClassifier) throws IOException {
-        final List<Geometry> geometries;
+    public static JtsMvt loadMvt(Path p,
+                                 GeometryFactory geomFactory,
+                                 ITagConverter tagConverter,
+                                 RingClassifier ringClassifier) throws IOException {
+        final JtsMvt jtsMvt;
 
         try(final InputStream is = new FileInputStream(p.toFile())) {
-            geometries = loadMvt(is, geomFactory, tagConverter, ringClassifier);
+            jtsMvt = loadMvt(is, geomFactory, tagConverter, ringClassifier);
         }
 
-        return geometries;
+        return jtsMvt;
     }
 
     /**
      * Load an MVT to JTS geometries using coordinates. Uses {@code tagConverter} to create user data
-     * from feature properties. Uses {@link #RING_CLASSIFIER_V2_1} for forming Polygons and MultiPolygons.
+     * from feature properties.
      *
      * @param is stream with MVT data
      * @param geomFactory allows for JTS geometry creation
      * @param tagConverter converts MVT feature tags to JTS user data object.
-     * @return JTS geometries in using MVT coordinates
+     * @return JTS MVT with geometry in MVT coordinates
      * @throws IOException failure reading MVT from stream
      * @see Geometry
      * @see Geometry#getUserData()
      * @see RingClassifier
      */
-    public static List<Geometry> loadMvt(InputStream is,
-                                         GeometryFactory geomFactory,
-                                         ITagConverter tagConverter) throws IOException {
+    public static JtsMvt loadMvt(InputStream is,
+                                 GeometryFactory geomFactory,
+                                 ITagConverter tagConverter) throws IOException {
         return loadMvt(is, geomFactory, tagConverter, RING_CLASSIFIER_V2_1);
     }
 
-
     /**
      * Load an MVT to JTS geometries using coordinates. Uses {@code tagConverter} to create user data
      * from feature properties.
@@ -102,50 +106,26 @@ public final class MvtReader {
      * @param geomFactory allows for JTS geometry creation
      * @param tagConverter converts MVT feature tags to JTS user data object.
      * @param ringClassifier determines how rings are parsed into Polygons and MultiPolygons
-     * @return JTS geometries in using MVT coordinates
+     * @return JTS MVT with geometry in MVT coordinates
      * @throws IOException failure reading MVT from stream
      * @see Geometry
      * @see Geometry#getUserData()
      * @see RingClassifier
      */
-    public static List<Geometry> loadMvt(InputStream is,
-                                         GeometryFactory geomFactory,
-                                         ITagConverter tagConverter,
-                                         RingClassifier ringClassifier) throws IOException {
-
-        final List<Geometry> tileGeoms = new ArrayList<>();
-        loadMvt(is, geomFactory, tagConverter, ringClassifier, (layerName, geometry) -> tileGeoms.add(geometry));
-        return tileGeoms;
-    }
-
-    /**
-     * Load an MVT to JTS geometries using coordinates. Uses {@code tagConverter} to create user data
-     * from feature properties.
-     *
-     * @param is stream with MVT data
-     * @param geomFactory allows for JTS geometry creation
-     * @param tagConverter converts MVT feature tags to JTS user data object.
-     * @param ringClassifier determines how rings are parsed into Polygons and MultiPolygons
-     * @param sink the receiver of geometry and source layer name
-     * @throws IOException failure reading MVT from stream
-     * @see Geometry
-     * @see Geometry#getUserData()
-     * @see RingClassifier
-     */
-    private static void loadMvt(InputStream is,
-                                GeometryFactory geomFactory,
-                                ITagConverter tagConverter,
-                                RingClassifier ringClassifier,
-                                Sink sink) throws IOException {
+    public static JtsMvt loadMvt(InputStream is,
+                                 GeometryFactory geomFactory,
+                                 ITagConverter tagConverter,
+                                 RingClassifier ringClassifier) throws IOException {
 
         final VectorTile.Tile mvt = VectorTile.Tile.parseFrom(is);
         final Vec2d cursor = new Vec2d();
+        final List<JtsLayer> jtsLayers = new ArrayList<>(mvt.getLayersList().size());
 
         for(VectorTile.Tile.Layer nextLayer : mvt.getLayersList()) {
-            String layerName = nextLayer.getName();
 
             final ProtocolStringList keysList = nextLayer.getKeysList();
             final List<VectorTile.Tile.Value> valuesList = nextLayer.getValuesList();
+            final List<Geometry> layerGeoms = new ArrayList<>(nextLayer.getFeaturesList().size());
 
             for(VectorTile.Tile.Feature nextFeature : nextLayer.getFeaturesList()) {
 
@@ -162,114 +142,15 @@ public final class MvtReader {
                 final Geometry nextGeom = readGeometry(geomCmds, geomType, geomFactory, cursor, ringClassifier);
                 if(nextGeom != null) {
                     nextGeom.setUserData(tagConverter.toUserData(id, nextFeature.getTagsList(), keysList, valuesList));
-                    sink.onGeometry(layerName, nextGeom);
+                    layerGeoms.add(nextGeom);
                 }
             }
-        }
-    }
 
-
-    /**
-     * Convenience method for loading MVT from file.
-     * See {@link #loadMvt(InputStream, GeometryFactory, ITagConverter, RingClassifier)}.
-     * Uses {@link #RING_CLASSIFIER_V2_1} for forming Polygons and MultiPolygons.
-     *
-     * @param p path to the MVT
-     * @param geomFactory allows for JTS geometry creation
-     * @param tagConverter converts MVT feature tags to JTS user data object
-     * @return A group of layers, each containing JTS geometries with MVT coordinates
-     * @throws IOException failure reading MVT from path
-     * @see #loadMvt(InputStream, GeometryFactory, ITagConverter, RingClassifier)
-     * @see Geometry
-     * @see Geometry#getUserData()
-     * @see RingClassifier
-     */
-    public static LayerGroup loadMvtWithLayers(Path p,
-                                               GeometryFactory geomFactory,
-                                               ITagConverter tagConverter) throws IOException {
-        return loadMvtWithLayers(p, geomFactory, tagConverter, RING_CLASSIFIER_V2_1);
-    }
-
-    /**
-     * Convenience method for loading MVT from file.
-     * See {@link #loadMvt(InputStream, GeometryFactory, ITagConverter, RingClassifier)}.
-     *
-     * @param p path to the MVT
-     * @param geomFactory allows for JTS geometry creation
-     * @param tagConverter converts MVT feature tags to JTS user data object
-     * @param ringClassifier determines how rings are parsed into Polygons and MultiPolygons
-     * @return A group of layers, each containing JTS geometries with MVT coordinates
-     * @throws IOException failure reading MVT from path
-     * @see #loadMvt(InputStream, GeometryFactory, ITagConverter, RingClassifier)
-     * @see Geometry
-     * @see Geometry#getUserData()
-     * @see RingClassifier
-     */
-    public static LayerGroup loadMvtWithLayers(Path p,
-                                               GeometryFactory geomFactory,
-                                               ITagConverter tagConverter,
-                                               RingClassifier ringClassifier) throws IOException {
-        final LayerGroup layerGroup;
-
-        try(final InputStream is = new FileInputStream(p.toFile())) {
-            layerGroup = loadMvtWithLayers(is, geomFactory, tagConverter, ringClassifier);
+            jtsLayers.add(new JtsLayer(nextLayer.getName(), layerGeoms));
         }
 
-        return layerGroup;
-    }
 
-
-    /**
-     * Load an MVT to JTS geometries using coordinates. Uses {@code tagConverter} to create user data
-     * from feature properties.
-     *
-     * @param is stream with MVT data
-     * @param geomFactory allows for JTS geometry creation
-     * @param tagConverter converts MVT feature tags to JTS user data object.
-     * @return A group of layers, each containing JTS geometries with MVT coordinates
-     * @throws IOException failure reading MVT from stream
-     * @see Geometry
-     * @see Geometry#getUserData()
-     * @see RingClassifier
-     */
-    public static LayerGroup loadMvtWithLayers(InputStream is,
-                                               GeometryFactory geomFactory,
-                                               ITagConverter tagConverter) throws IOException {
-        return loadMvtWithLayers(is, geomFactory, tagConverter, RING_CLASSIFIER_V2_1);
-    }
-
-    /**
-     * Load an MVT to JTS geometries using coordinates. Uses {@code tagConverter} to create user data
-     * from feature properties.
-     *
-     * @param is stream with MVT data
-     * @param geomFactory allows for JTS geometry creation
-     * @param tagConverter converts MVT feature tags to JTS user data object.
-     * @param ringClassifier determines how rings are parsed into Polygons and MultiPolygons
-     * @return A group of layers, each containing JTS geometries with MVT coordinates
-     * @throws IOException failure reading MVT from stream
-     * @see Geometry
-     * @see Geometry#getUserData()
-     * @see RingClassifier
-     */
-    public static LayerGroup loadMvtWithLayers(InputStream is,
-                                               GeometryFactory geomFactory,
-                                               ITagConverter tagConverter,
-                                               RingClassifier ringClassifier) throws IOException {
-        LayerGroup layerGroup = new LayerGroup();
-        loadMvt(is, geomFactory, tagConverter, ringClassifier, (layerName, geometry) -> {
-            Layer layer = layerGroup.getLayer(layerName);
-            if (layer == null) {
-                layer = new Layer(layerName);
-                layerGroup.addLayer(layer);
-            }
-            layer.add(geometry);
-        });
-        return layerGroup;
-    }
-
-    private interface Sink {
-        void onGeometry(String layerName, Geometry geometry);
+        return new JtsMvt(jtsLayers);
     }
 
     private static Geometry readGeometry(List<Integer> geomCmds,

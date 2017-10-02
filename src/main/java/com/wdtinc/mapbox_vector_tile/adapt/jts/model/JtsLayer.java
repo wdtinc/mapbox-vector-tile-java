@@ -1,4 +1,4 @@
-package com.wdtinc.mapbox_vector_tile.adapt.jts;
+package com.wdtinc.mapbox_vector_tile.adapt.jts.model;
 
 import com.vividsolutions.jts.geom.Geometry;
 
@@ -6,35 +6,50 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 /**
- * A layer contains a subset of all geographic geometries.
+ * <p>JTS model of a Mapbox Vector Tile (MVT) layer.</p>
+ *
+ * <p>A layer contains a subset of all geographic geometries in the tile.</p>
  */
-public class Layer {
+public class JtsLayer {
 
     private final String name;
     private final Collection<Geometry> geometries;
 
-    public Layer(String name) {
-        this(name, new ArrayList<>());
+    /**
+     * Create an empty JTS layer.
+     *
+     * @param name layer name
+     * @throws IllegalArgumentException when {@code name} is null
+     */
+    public JtsLayer(String name) {
+        this(name, new ArrayList<>(0));
     }
 
-    public Layer(String name, Collection<Geometry> geometries) {
-        check(name, geometries);
+    /**
+     * Create a JTS layer with geometries.
+     *
+     * @param name layer name
+     * @param geometries
+     * @throws IllegalArgumentException when {@code name} or {@code geometries} are null
+     */
+    public JtsLayer(String name, Collection<Geometry> geometries) {
+        validate(name, geometries);
         this.name = name;
         this.geometries = geometries;
     }
 
-    public void add(Geometry geometry) {
-        geometries.add(geometry);
-    }
-
-    public void addAll(Collection<Geometry> geometries) {
-        this.geometries.addAll(geometries);
-    }
-
+    /**
+     * Get a read-only collection of geometry.
+     *
+     * @return unmodifiable collection of geometry.
+     */
     public Collection<Geometry> getGeometries() {
-        return new ArrayList<>(geometries);
+        return geometries;
     }
 
+    /**
+     * @return name of the layer
+     */
     public String getName() {
         return name;
     }
@@ -44,7 +59,7 @@ public class Layer {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        Layer layer = (Layer) o;
+        JtsLayer layer = (JtsLayer) o;
 
         if (name != null ? !name.equals(layer.name) : layer.name != null) return false;
         return geometries != null ? geometries.equals(layer.geometries) : layer.geometries == null;
@@ -65,7 +80,12 @@ public class Layer {
                 '}';
     }
 
-    private static void check(String name, Collection<Geometry> geometries) {
+    /**
+     * @param name mvt layer name
+     * @param geometries geometries in the tile
+     * @throws IllegalArgumentException when {@code name} or {@code geometries} are null
+     */
+    private static void validate(String name, Collection<Geometry> geometries) {
         if (name == null) {
             throw new IllegalArgumentException("layer name is null");
         }
