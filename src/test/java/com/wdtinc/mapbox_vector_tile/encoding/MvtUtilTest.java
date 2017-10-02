@@ -1,7 +1,5 @@
-package com.wdtinc.mapbox_vector_tile;
+package com.wdtinc.mapbox_vector_tile.encoding;
 
-import com.wdtinc.mapbox_vector_tile.encoding.GeomCmd;
-import com.wdtinc.mapbox_vector_tile.encoding.GeomCmdHdr;
 import org.junit.Test;
 
 import java.util.Arrays;

@@ -39,17 +39,20 @@ into JTS geometry. The TagKeyValueMapConverter instance will convert
 MVT feature tags to a Map with primitive values. The map will be
 stored as a JTS geometry user data object within the Geometry.
 
+The JtsMvt object wraps the JTS Geometry with MVT layer information
+and structure.
+
 ```java
 GeometryFactory geomFactory = new GeometryFactory();
 
-List<Geometry> geoms = MvtReader.loadMvt(
+JtsMvt jtsMvt = MvtReader.loadMvt(
         Paths.get("path/to/your.mvt"),
         geomFactory,
         new TagKeyValueMapConverter());
 
 
 // Allow negative-area exterior rings with classifier
-List<Geometry> geoms = MvtReader.loadMvt(
+JtsMvt jtsMvt = MvtReader.loadMvt(
         Paths.get("path/to/your.mvt"),
         geomFactory,
         new TagKeyValueMapConverter(),

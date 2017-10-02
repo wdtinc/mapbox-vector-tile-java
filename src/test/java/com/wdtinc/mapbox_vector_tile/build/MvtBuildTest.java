@@ -1,8 +1,11 @@
-package com.wdtinc.mapbox_vector_tile;
+package com.wdtinc.mapbox_vector_tile.build;
 
 import com.vividsolutions.jts.algorithm.ConvexHull;
 import com.vividsolutions.jts.geom.*;
+import com.wdtinc.mapbox_vector_tile.VectorTile;
 import com.wdtinc.mapbox_vector_tile.adapt.jts.*;
+import com.wdtinc.mapbox_vector_tile.adapt.jts.model.JtsLayer;
+import com.wdtinc.mapbox_vector_tile.adapt.jts.model.JtsMvt;
 import com.wdtinc.mapbox_vector_tile.build.MvtLayerBuild;
 import com.wdtinc.mapbox_vector_tile.build.MvtLayerParams;
 import com.wdtinc.mapbox_vector_tile.build.MvtLayerProps;
@@ -10,15 +13,17 @@ import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.*;
 
 /**
  * Test building MVTs.
  */
 public final class MvtBuildTest {
+
+    private static String TEST_LAYER_NAME = "layerNameHere";
 
     /** Fixed randomization with arbitrary seed value */
     private static final long SEED = 487125064L;
@@ -34,6 +39,9 @@ public final class MvtBuildTest {
 
     /** Default MVT parameters */
     private static final MvtLayerParams DEFAULT_MVT_PARAMS = new MvtLayerParams();
+
+    /** Generate Geometries with this default specification */
+    private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory();
 
     @Test
     public void testPoints() throws IOException {
@@ -56,14 +64,16 @@ public final class MvtBuildTest {
 
         assertNotNull(bytes);
 
+        JtsMvt expected = new JtsMvt(singletonList(new JtsLayer(TEST_LAYER_NAME, tileGeom.mvtGeoms)));
+
         // Load multipolygon z0 tile
-        final List<Geometry> geoms = MvtReader.loadMvt(
+        JtsMvt actual = MvtReader.loadMvt(
                 new ByteArrayInputStream(bytes),
                 new GeometryFactory(),
                 new TagKeyValueMapConverter());
 
         // Check that MVT geometries are the same as the ones that were encoded above
-        assertEquals(geoms, tileGeom.mvtGeoms);
+        assertEquals(expected, actual);
     }
 
     @Test
@@ -88,14 +98,16 @@ public final class MvtBuildTest {
 
         assertNotNull(bytes);
 
+        JtsMvt expected = new JtsMvt(singletonList(new JtsLayer(TEST_LAYER_NAME, tileGeom.mvtGeoms)));
+
         // Load multipolygon z0 tile
-        final List<Geometry> geoms = MvtReader.loadMvt(
+        JtsMvt actual = MvtReader.loadMvt(
                 new ByteArrayInputStream(bytes),
                 new GeometryFactory(),
                 new TagKeyValueMapConverter());
 
         // Check that MVT geometries are the same as the ones that were encoded above
-        assertEquals(geoms, tileGeom.mvtGeoms);
+        assertEquals(expected, actual);
     }
 
     @Test
@@ -120,14 +132,16 @@ public final class MvtBuildTest {
 
         assertNotNull(bytes);
 
+        JtsMvt expected = new JtsMvt(singletonList(new JtsLayer(TEST_LAYER_NAME, tileGeom.mvtGeoms)));
+
         // Load multipolygon z0 tile
-        final List<Geometry> geoms = MvtReader.loadMvt(
+        JtsMvt actual = MvtReader.loadMvt(
                 new ByteArrayInputStream(bytes),
                 new GeometryFactory(),
                 new TagKeyValueMapConverter());
 
         // Check that MVT geometries are the same as the ones that were encoded above
-        assertEquals(geoms, tileGeom.mvtGeoms);
+        assertEquals(expected, actual);
     }
 
     @Test
@@ -162,14 +176,51 @@ public final class MvtBuildTest {
 
         assertNotNull(bytes);
 
+        JtsMvt expected = new JtsMvt(singletonList(
+                new JtsLayer(TEST_LAYER_NAME, bufferedTileGeom.mvtGeoms)));
+
         // Load multipolygon z0 tile
-        final List<Geometry> geoms = MvtReader.loadMvt(
+        JtsMvt actual = MvtReader.loadMvt(
                 new ByteArrayInputStream(bytes),
                 new GeometryFactory(),
                 new TagKeyValueMapConverter());
 
         // Check that MVT geometries are the same as the ones that were encoded above
-        assertEquals(geoms, bufferedTileGeom.mvtGeoms);
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testPointsInLayers() throws IOException {
+        Point point1 = createPoint();
+        Point point2 = createPoint();
+        Point point3 = createPoint();
+
+        String layer1Name = "Layer 1";
+        String layer2Name = "Layer 2";
+
+        byte[] bytes = new MvtWriter.Builder()
+                .setLayer(layer1Name)
+                .add(point1)
+                .add(point2)
+                .setLayer(layer2Name)
+                .add(point3)
+                .build();
+
+        assertNotNull(bytes);
+
+        JtsMvt layers = MvtReader.loadMvt(new ByteArrayInputStream(bytes), new GeometryFactory(),
+                new TagKeyValueMapConverter());
+
+        assertNotNull(layers.getLayer(layer1Name));
+        assertNotNull(layers.getLayer(layer2Name));
+
+        Collection<Geometry> actualLayer1Geometries = layers.getLayer(layer1Name).getGeometries();
+        Collection<Geometry> expectedLayer1Geometries = Arrays.asList(point1, point2);
+        assertEquals(expectedLayer1Geometries, actualLayer1Geometries);
+
+        Collection<Geometry> actualLayer2Geometries = layers.getLayer(layer2Name).getGeometries();
+        Collection<Geometry> expectedLayer2Geometries = Arrays.asList(point3);
+        assertEquals(expectedLayer2Geometries, actualLayer2Geometries);
     }
 
     private static MultiPoint buildMultiPoint(Random random, int pointCount, GeometryFactory geomFactory) {
@@ -192,6 +243,19 @@ public final class MvtBuildTest {
         return (Polygon) hullGeom;
     }
 
+    private Point createPoint() {
+        Coordinate coord = new Coordinate( (int) (RANDOM.nextDouble() * 4095),
+                (int) (RANDOM.nextDouble() * 4095));
+        Point point = GEOMETRY_FACTORY.createPoint(coord);
+
+        Map<String, Object> attributes = new LinkedHashMap<>();
+        attributes.put("id", RANDOM.nextDouble());
+        attributes.put("name", String.format("name %f : %f", coord.x, coord.y));
+        point.setUserData(attributes);
+
+        return point;
+    }
+
     private static CoordinateSequence getCoordSeq(Random random, int pointCount, GeometryFactory geomFactory) {
         final CoordinateSequence coordSeq = geomFactory.getCoordinateSequenceFactory().create(pointCount, 2);
         for(int i = 0; i < pointCount; ++i) {
@@ -208,7 +272,7 @@ public final class MvtBuildTest {
         final VectorTile.Tile.Builder tileBuilder = VectorTile.Tile.newBuilder();
 
         // Create MVT layer
-        final VectorTile.Tile.Layer.Builder layerBuilder = MvtLayerBuild.newLayerBuilder("layerNameHere", mvtParams);
+        final VectorTile.Tile.Layer.Builder layerBuilder = MvtLayerBuild.newLayerBuilder(TEST_LAYER_NAME, mvtParams);
         final MvtLayerProps layerProps = new MvtLayerProps();
         final UserDataIgnoreConverter ignoreUserData = new UserDataIgnoreConverter();
 
@@ -225,5 +289,71 @@ public final class MvtBuildTest {
 
         /// Build MVT
         return tileBuilder.build();
+    }
+
+    private static class MvtWriter {
+
+        static class Builder {
+            // Default MVT parameters
+            private static final MvtLayerParams DEFAULT_MVT_PARAMS = new MvtLayerParams();
+
+            private String activeLayer = "default";
+
+            private Map<String, List<Geometry>> layers = new HashMap<>();
+
+            Builder() {}
+
+            Builder setLayer(String layerName) {
+                Objects.requireNonNull(layerName);
+                activeLayer = layerName;
+                return this;
+            }
+
+            Builder add(Geometry geometry) {
+                Objects.requireNonNull(geometry);
+                getActiveLayer().add(geometry);
+                return this;
+            }
+
+            byte[] build() {
+                // Build MVT
+                final VectorTile.Tile.Builder tileBuilder = VectorTile.Tile.newBuilder();
+
+                for (Map.Entry<String, List<Geometry>> layer : layers.entrySet()) {
+                    // Layer
+                    String name = layer.getKey();
+                    List<Geometry> geometries = layer.getValue();
+
+                    // Create MVT layer
+                    final VectorTile.Tile.Layer.Builder layerBuilder =
+                            MvtLayerBuild.newLayerBuilder(name, DEFAULT_MVT_PARAMS);
+
+                    final MvtLayerProps layerProps = new MvtLayerProps();
+
+                    // MVT tile geometry to MVT features
+                    final List<VectorTile.Tile.Feature> features =
+                            JtsAdapter.toFeatures(geometries, layerProps,
+                                    new UserDataKeyValueMapConverter());
+
+                    layerBuilder.addAllFeatures(features);
+                    MvtLayerBuild.writeProps(layerBuilder, layerProps);
+
+                    // Build MVT layer
+                    final VectorTile.Tile.Layer mvtLayer = layerBuilder.build();
+                    tileBuilder.addLayers(mvtLayer);
+                }
+
+                // Build MVT
+                return tileBuilder.build().toByteArray();
+            }
+
+            private List<Geometry> getActiveLayer() {
+                boolean isDefined = layers.containsKey(activeLayer);
+                if (!isDefined) {
+                    layers.put(activeLayer, new ArrayList<>());
+                }
+                return layers.get(activeLayer);
+            }
+        }
     }
 }

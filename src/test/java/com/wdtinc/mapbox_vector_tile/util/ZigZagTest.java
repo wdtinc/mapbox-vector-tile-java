@@ -1,4 +1,4 @@
-package com.wdtinc.mapbox_vector_tile;
+package com.wdtinc.mapbox_vector_tile.util;
 
 import com.wdtinc.mapbox_vector_tile.encoding.ZigZag;
 import org.junit.Test;

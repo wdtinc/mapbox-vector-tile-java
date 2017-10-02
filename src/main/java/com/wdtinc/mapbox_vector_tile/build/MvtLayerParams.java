@@ -6,6 +6,12 @@ package com.wdtinc.mapbox_vector_tile.build;
  */
 public final class MvtLayerParams {
 
+    /**
+     * Default layer parameters created using {@link #MvtLayerParams()}
+     */
+    public static final MvtLayerParams DEFAULT = new MvtLayerParams();
+
+
     /** the resolution of the tile in 'pixel' dimensions */
     public final int tileSize;
 
