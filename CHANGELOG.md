@@ -1,4 +1,12 @@
 
+## 2.0.0 (Oct 2 2017)
+
+#### Features
+
+- BREAKING CHANGE: Rework MVTReader to return JtsMvt objects that retain MVT layer information. No longer returns flat collection of JTS Geometry.
+
+- TagKeyValueMapConverter now uses a LinkedHashMap internally to preserve property order.
+
 ## 1.2.0 (Jul 6 2017)
 
 #### Features

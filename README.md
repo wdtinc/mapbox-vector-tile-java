@@ -22,14 +22,14 @@ See:
 <dependency>
     <groupId>com.wdtinc</groupId>
     <artifactId>mapbox-vector-tile</artifactId>
-    <version>1.2.0</version>
+    <version>2.0.0</version>
 </dependency>
 ```
 
 #### Gradle
 
 ```
-compile 'com.wdtinc:mapbox-vector-tile:1.2.0'
+compile 'com.wdtinc:mapbox-vector-tile:2.0.0'
 ```
 
 ### Reading MVTs
