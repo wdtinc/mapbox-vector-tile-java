@@ -1,6 +1,5 @@
 package com.wdtinc.mapbox_vector_tile.adapt.jts;
 
-import com.google.protobuf.ProtocolStringList;
 import com.wdtinc.mapbox_vector_tile.VectorTile;
 
 import java.util.List;
@@ -22,6 +21,6 @@ public interface ITagConverter {
      */
     Object toUserData(Long id,
                       List<Integer> tags,
-                      ProtocolStringList keysList,
+                      List<String> keysList,
                       List<VectorTile.Tile.Value> valuesList);
 }

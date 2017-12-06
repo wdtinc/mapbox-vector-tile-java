@@ -1,6 +1,5 @@
 package com.wdtinc.mapbox_vector_tile.adapt.jts;
 
-import com.google.protobuf.ProtocolStringList;
 import com.vividsolutions.jts.algorithm.CGAlgorithms;
 import com.vividsolutions.jts.geom.*;
 import com.wdtinc.mapbox_vector_tile.adapt.jts.model.JtsLayer;
@@ -123,7 +122,7 @@ public final class MvtReader {
 
         for(VectorTile.Tile.Layer nextLayer : mvt.getLayersList()) {
 
-            final ProtocolStringList keysList = nextLayer.getKeysList();
+            final List<String> keysList = nextLayer.getKeysList();
             final List<VectorTile.Tile.Value> valuesList = nextLayer.getValuesList();
             final List<Geometry> layerGeoms = new ArrayList<>(nextLayer.getFeaturesList().size());
 
