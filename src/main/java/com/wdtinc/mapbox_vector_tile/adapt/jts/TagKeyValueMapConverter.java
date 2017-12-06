@@ -1,6 +1,5 @@
 package com.wdtinc.mapbox_vector_tile.adapt.jts;
 
-import com.google.protobuf.ProtocolStringList;
 import com.wdtinc.mapbox_vector_tile.encoding.MvtValue;
 import com.wdtinc.mapbox_vector_tile.VectorTile;
 
@@ -56,7 +55,7 @@ public final class TagKeyValueMapConverter implements ITagConverter {
     }
 
     @Override
-    public Object toUserData(Long id, List<Integer> tags, ProtocolStringList keysList,
+    public Object toUserData(Long id, List<Integer> tags, List<String> keysList,
                              List<VectorTile.Tile.Value> valuesList) {
 
         // Guard: empty
