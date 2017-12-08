@@ -3,7 +3,6 @@ package com.wdtinc.mapbox_vector_tile.util;
 import com.vividsolutions.jts.geom.*;
 import com.wdtinc.mapbox_vector_tile.VectorTile;
 import com.wdtinc.mapbox_vector_tile.adapt.jts.JtsAdapter;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -44,6 +43,12 @@ public final class JtsGeomStats {
                 '}';
     }
 
+    /**
+     * Get feature counts and feature statistics (points and repeated points).
+     *
+     * @param flatGeomList geometry under analysis
+     * @return the resulting statistics
+     */
     public static JtsGeomStats getStats(List<Geometry> flatGeomList) {
         final JtsGeomStats stats = new JtsGeomStats();
 
@@ -51,7 +56,9 @@ public final class JtsGeomStats {
             final VectorTile.Tile.GeomType geomType = JtsAdapter.toGeomType(nextGeom);
 
             // Count features by type
-            stats.featureCounts.compute(geomType, (k, v) -> v + 1);
+            Integer value = stats.featureCounts.get(geomType);
+            value = value == null ? 1 : value + 1;
+            stats.featureCounts.put(geomType, value);
 
             // Get stats per feature
             stats.featureStats.add(getStats(nextGeom, geomType));

@@ -11,10 +11,10 @@ import com.wdtinc.mapbox_vector_tile.encoding.ZigZag;
 import com.wdtinc.mapbox_vector_tile.util.Vec2d;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,7 +34,7 @@ public final class MvtReader {
      * See {@link #loadMvt(InputStream, GeometryFactory, ITagConverter, RingClassifier)}.
      * Uses {@link #RING_CLASSIFIER_V2_1} for forming Polygons and MultiPolygons.
      *
-     * @param p path to the MVT
+     * @param file path to the MVT
      * @param geomFactory allows for JTS geometry creation
      * @param tagConverter converts MVT feature tags to JTS user data object
      * @return JTS MVT with geometry in MVT coordinates
@@ -44,17 +44,17 @@ public final class MvtReader {
      * @see Geometry#getUserData()
      * @see RingClassifier
      */
-    public static JtsMvt loadMvt(Path p,
+    public static JtsMvt loadMvt(File file,
                                  GeometryFactory geomFactory,
                                  ITagConverter tagConverter) throws IOException {
-        return loadMvt(p, geomFactory, tagConverter, RING_CLASSIFIER_V2_1);
+        return loadMvt(file, geomFactory, tagConverter, RING_CLASSIFIER_V2_1);
     }
 
     /**
      * Convenience method for loading MVT from file.
      * See {@link #loadMvt(InputStream, GeometryFactory, ITagConverter, RingClassifier)}.
      *
-     * @param p path to the MVT
+     * @param file path to the MVT
      * @param geomFactory allows for JTS geometry creation
      * @param tagConverter converts MVT feature tags to JTS user data object
      * @param ringClassifier determines how rings are parsed into Polygons and MultiPolygons
@@ -65,13 +65,13 @@ public final class MvtReader {
      * @see Geometry#getUserData()
      * @see RingClassifier
      */
-    public static JtsMvt loadMvt(Path p,
+    public static JtsMvt loadMvt(File file,
                                  GeometryFactory geomFactory,
                                  ITagConverter tagConverter,
                                  RingClassifier ringClassifier) throws IOException {
         final JtsMvt jtsMvt;
 
-        try(final InputStream is = new FileInputStream(p.toFile())) {
+        try(final InputStream is = new FileInputStream(file)) {
             jtsMvt = loadMvt(is, geomFactory, tagConverter, ringClassifier);
         }
 
@@ -461,12 +461,10 @@ public final class MvtReader {
     /**
      * Classifies Polygon and MultiPolygon rings.
      */
-    @FunctionalInterface
     public interface RingClassifier {
 
         /**
          * <p>Classify a list of rings into polygons using surveyor formula.</p>
-         *
          * <p>Zero-area polygons are removed.</p>
          *
          * @param rings linear rings to classify into polygons
@@ -477,10 +475,14 @@ public final class MvtReader {
     }
 
 
-    /** Area for surveyor formula may be positive or negative for exterior rings. Mimics Mapbox parsers supporting V1. */
+    /**
+     * Area for surveyor formula may be positive or negative for exterior rings. Mimics Mapbox parsers supporting V1.
+     */
     public static final RingClassifier RING_CLASSIFIER_V1 = new PolyRingClassifierV1();
 
-    /** Area from surveyor formula must be positive for exterior rings. Obeys V2.1 spec. */
+    /**
+     * Area from surveyor formula must be positive for exterior rings. Obeys V2.1 spec.
+     */
     public static final RingClassifier RING_CLASSIFIER_V2_1 = new PolyRingClassifierV2_1();
 
 
@@ -532,7 +534,6 @@ public final class MvtReader {
             }
 
             if(outerPoly != null) {
-                holes.toArray();
                 polygons.add(geomFactory.createPolygon(outerPoly, holes.toArray(new LinearRing[holes.size()])));
             }
 
@@ -589,7 +590,6 @@ public final class MvtReader {
             }
 
             if(outerPoly != null) {
-                holes.toArray();
                 polygons.add(geomFactory.createPolygon(outerPoly, holes.toArray(new LinearRing[holes.size()])));
             }
 

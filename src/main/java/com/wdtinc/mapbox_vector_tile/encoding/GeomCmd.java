@@ -10,10 +10,14 @@ public enum GeomCmd {
     LineTo(2, 2),
     ClosePath(7, 0);
 
-    /** Unique command ID */
+    /**
+     * Unique command ID.
+     */
     private final int cmdId;
 
-    /** Amount of parameters that follow the command */
+    /**
+     * Amount of parameters that follow the command.
+     */
     private final int paramCount;
 
     GeomCmd(int cmdId, int paramCount) {
@@ -22,14 +26,14 @@ public enum GeomCmd {
     }
 
     /**
-     * @return unique command ID
+     * @return unique command ID.
      */
     public int getCmdId() {
         return cmdId;
     }
 
     /**
-     * @return amount of parameters that follow the command
+     * @return amount of parameters that follow the command.
      */
     public int getParamCount() {
         return paramCount;

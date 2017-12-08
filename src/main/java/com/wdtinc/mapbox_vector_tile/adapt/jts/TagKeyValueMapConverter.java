@@ -13,13 +13,19 @@ import java.util.*;
  */
 public final class TagKeyValueMapConverter implements ITagConverter {
 
-    /** If true, return null user data when tags are empty */
+    /**
+     * If true, return null user data when tags are empty.
+     */
     private final boolean nullIfEmpty;
 
-    /** If true, add id to user data object */
+    /**
+     * If true, add id to user data object.
+     */
     private final boolean addId;
 
-    /** The {@link Map} key for the feature id. */
+    /**
+     * The {@link Map} key for the feature id.
+     */
     private final String idKey;
 
     /**

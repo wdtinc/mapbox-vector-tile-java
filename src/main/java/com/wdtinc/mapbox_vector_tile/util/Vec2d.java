@@ -1,4 +1,3 @@
-
 package com.wdtinc.mapbox_vector_tile.util;
 
 /**
@@ -16,7 +15,7 @@ public final class Vec2d {
     }
 
     /**
-     * Construct instance with (x, y) values set to passed parameters
+     * Construct instance with (x, y) values set to passed parameters.
      *
      * @param x value in x
      * @param y value in y
@@ -120,7 +119,7 @@ public final class Vec2d {
     }
 
     @Override
-    public String toString () {
+    public String toString() {
         return "(" + x + "," + y + ")";
     }
 }
