@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/wdtinc/mapbox-vector-tile-java.svg?branch=master)](https://travis-ci.org/wdtinc/mapbox-vector-tile-java)
+
 # MapBox Vector Tile - Java
 
 ## Overview
