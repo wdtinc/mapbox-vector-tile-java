@@ -1,4 +1,18 @@
 
+## 3.0.0 (Jan 12 2018)
+
+#### Features
+
+- Android 21 Compatibility
+
+- BREAKING CHANGE: Use File rather than Path for Android compatibility.
+
+#### Fixes
+
+- Fixed guard cases in JTSAdapter to return an empty list when the geometry was not valid for encoding.
+
+- Fixed calculation to float from int of MvtLayerParams#ratio. This value was not being read within the project but may affect other projects.
+
 ## 2.0.0 (Oct 2 2017)
 
 #### Features

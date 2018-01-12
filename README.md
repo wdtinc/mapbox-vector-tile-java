@@ -8,6 +8,7 @@ Provides:
 
  * protoc generated model for Mapbox Vector Tiles v2.1.
  * Provides MVT encoding through use of the Java Topology Suite (JTS).
+ * Android v21 compatibility (as of version 3.0.0).
 
 See:
 
@@ -24,14 +25,14 @@ See:
 <dependency>
     <groupId>com.wdtinc</groupId>
     <artifactId>mapbox-vector-tile</artifactId>
-    <version>2.0.0</version>
+    <version>3.0.0</version>
 </dependency>
 ```
 
 #### Gradle
 
 ```
-compile 'com.wdtinc:mapbox-vector-tile:2.0.0'
+compile 'com.wdtinc:mapbox-vector-tile:3.0.0'
 ```
 
 ### Reading MVTs
