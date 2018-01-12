@@ -9,8 +9,8 @@ import com.wdtinc.mapbox_vector_tile.util.JtsGeomStats;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
@@ -26,9 +26,9 @@ public final class MvtReaderTest {
     public void testLayers() {
         try {
             JtsMvt result = MvtReader.loadMvt(
-                    Paths.get("src/test/resources/vec_tile_test/game.mvt"),
-                    new GeometryFactory(),
-                    new TagKeyValueMapConverter());
+                new File("src/test/resources/vec_tile_test/game.mvt"),
+                new GeometryFactory(),
+                new TagKeyValueMapConverter());
 
             final Collection<JtsLayer> layerValues = result.getLayers();
             final int actualCount = layerValues.size();
@@ -62,7 +62,6 @@ public final class MvtReaderTest {
             // Debug stats of multipolygon
             final JtsGeomStats stats = JtsGeomStats.getStats(geoms);
             LoggerFactory.getLogger(MvtReaderTest.class).info("Stats: {}", stats);
-
         } catch (IOException e) {
             fail(e.getMessage());
         }
@@ -71,7 +70,6 @@ public final class MvtReaderTest {
     @Test
     public void testNegExtPolyRings() {
         try {
-
             // Single MultiPolygon with two triangles that have negative area from shoelace formula
             // Support for 'V1' MVTs.
             final JtsMvt mvt = loadMvt(
@@ -81,7 +79,6 @@ public final class MvtReaderTest {
 
             assertEquals(1, geoms.size());
             assertTrue(geoms.get(0) instanceof MultiPolygon);
-
         } catch (IOException e) {
             fail(e.getMessage());
         }
@@ -95,17 +92,17 @@ public final class MvtReaderTest {
         return allGeoms;
     }
 
-    private static JtsMvt loadMvt(String path) throws IOException {
+    private static JtsMvt loadMvt(String file) throws IOException {
         return MvtReader.loadMvt(
-                Paths.get(path),
+                new File(file),
                 new GeometryFactory(),
                 new TagKeyValueMapConverter());
     }
 
-    private static JtsMvt loadMvt(String path,
+    private static JtsMvt loadMvt(String file,
                                   MvtReader.RingClassifier ringClassifier) throws IOException {
         return MvtReader.loadMvt(
-                Paths.get(path),
+                new File(file),
                 new GeometryFactory(),
                 new TagKeyValueMapConverter(),
                 ringClassifier);

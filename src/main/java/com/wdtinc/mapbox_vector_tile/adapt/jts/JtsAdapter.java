@@ -141,16 +141,6 @@ public final class JtsAdapter {
     }
 
     /**
-     * @param envelope non-list geometry defines bounding area
-     * @param data geometry passed to {@link #flatFeatureList(Geometry)}
-     * @return list of geometry from {@code data} intersecting with {@code envelope}.
-     * @see #flatIntersection(Geometry, List)
-     */
-    private static List<Geometry> flatIntersection(Geometry envelope, Geometry data) {
-        return flatIntersection(envelope, flatFeatureList(data));
-    }
-
-    /**
      * JTS 1.14 does not support intersection on a {@link GeometryCollection}. This function works around this
      * by performing intersection on a flat list of geometry. The resulting list is pre-filtered for invalid
      * or empty geometry (outside of bounds). Invalid geometry are logged as errors.
@@ -442,9 +432,8 @@ public final class JtsAdapter {
         // Guard: empty geometry coordinates
         final Coordinate[] geomCoords = geom.getCoordinates();
         if(geomCoords.length <= 0) {
-            Collections.emptyList();
+            return Collections.emptyList();
         }
-
 
         /** Tile commands and parameters */
         final List<Integer> geomCmds = new ArrayList<>(geomCmdBuffLenPts(geomCoords.length));
@@ -514,9 +503,8 @@ public final class JtsAdapter {
 
         // Guard/Optimization: Not enough geometry coordinates for a line
         if(minExpGeomCoords < 2) {
-            Collections.emptyList();
+            return Collections.emptyList();
         }
-
 
         /** Tile commands and parameters */
         final List<Integer> geomCmds = new ArrayList<>(geomCmdBuffLenLines(minExpGeomCoords, closeEnabled));

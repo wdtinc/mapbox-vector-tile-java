@@ -18,10 +18,11 @@ import static org.junit.Assert.assertEquals;
 
 public final class MvtEncoderTest {
 
-    private static final GeometryFactory GEOMETRY_FACORY = new GeometryFactory();
+    private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory();
 
     private static JtsMvt decode(byte[] bytes) throws IOException {
-        return MvtReader.loadMvt(new ByteArrayInputStream(bytes), GEOMETRY_FACORY, new TagKeyValueMapConverter());
+        return MvtReader.loadMvt(new ByteArrayInputStream(bytes), GEOMETRY_FACTORY,
+            new TagKeyValueMapConverter());
     }
 
     @Test
@@ -48,7 +49,9 @@ public final class MvtEncoderTest {
 
     private static class PointGen {
 
-        /** Generate Geometries with this default specification */
+        /**
+         * Generate Geometries with this default specification.
+         */
         private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory();
         private static final Random RANDOM = new Random();
 
@@ -86,8 +89,7 @@ public final class MvtEncoderTest {
         }
 
         private static Point createPoint(String name) {
-            Coordinate coord = new Coordinate( (int) (RANDOM.nextDouble() * 4095),
-                    (int) (RANDOM.nextDouble() * 4095));
+            Coordinate coord = new Coordinate(RANDOM.nextInt(4096), RANDOM.nextInt(4096));
             Point point = GEOMETRY_FACTORY.createPoint(coord);
 
             Map<String, Object> attributes = new LinkedHashMap<>();
