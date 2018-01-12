@@ -10,5 +10,7 @@ import com.wdtinc.mapbox_vector_tile.build.MvtLayerProps;
  */
 public final class UserDataIgnoreConverter implements IUserDataConverter {
     @Override
-    public void addTags(Object userData, MvtLayerProps layerProps, VectorTile.Tile.Feature.Builder featureBuilder) {}
+    public void addTags(Object userData, MvtLayerProps layerProps,
+                        VectorTile.Tile.Feature.Builder featureBuilder) {
+    }
 }

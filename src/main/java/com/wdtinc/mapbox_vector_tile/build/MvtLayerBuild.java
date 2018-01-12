@@ -2,6 +2,7 @@ package com.wdtinc.mapbox_vector_tile.build;
 
 import com.wdtinc.mapbox_vector_tile.VectorTile;
 import com.wdtinc.mapbox_vector_tile.encoding.MvtValue;
+import java.util.Iterator;
 
 /**
  * Utility methods for building Mapbox-Vector-Tile layers.
@@ -16,7 +17,8 @@ public final class MvtLayerBuild {
      * @param mvtLayerParams tile creation parameters
      * @return new layer builder instance with initialized metadata.
      */
-    public static VectorTile.Tile.Layer.Builder newLayerBuilder(String layerName, MvtLayerParams mvtLayerParams) {
+    public static VectorTile.Tile.Layer.Builder newLayerBuilder(String layerName,
+                                                                MvtLayerParams mvtLayerParams) {
         final VectorTile.Tile.Layer.Builder layerBuilder = VectorTile.Tile.Layer.newBuilder();
         layerBuilder.setVersion(2);
         layerBuilder.setName(layerName);
@@ -31,13 +33,16 @@ public final class MvtLayerBuild {
      * @param layerBuilder layer builder to write to
      * @param layerProps properties to write
      */
-    public static void writeProps(VectorTile.Tile.Layer.Builder layerBuilder, MvtLayerProps layerProps) {
+    public static void writeProps(VectorTile.Tile.Layer.Builder layerBuilder,
+                                  MvtLayerProps layerProps) {
 
         // Add keys
         layerBuilder.addAllKeys(layerProps.getKeys());
 
         // Add values
         final Iterable<Object> vals = layerProps.getVals();
-        vals.forEach(o -> layerBuilder.addValues(MvtValue.toValue(o)));
+        for (Object val : vals) {
+            layerBuilder.addValues(MvtValue.toValue(val));
+        }
     }
 }

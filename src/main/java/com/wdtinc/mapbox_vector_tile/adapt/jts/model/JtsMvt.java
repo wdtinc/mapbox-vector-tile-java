@@ -7,7 +7,9 @@ import java.util.*;
  */
 public class JtsMvt {
 
-    /** Map layers by name */
+    /**
+     * Map layers by name.
+     */
     private final Map<String, JtsLayer> layersByName;
 
     /**
@@ -51,6 +53,8 @@ public class JtsMvt {
     }
 
     /**
+     * Get the layer by the given name.
+     *
      * @param name layer name
      * @return layer with matching name, or null if none exists
      */
@@ -59,6 +63,8 @@ public class JtsMvt {
     }
 
     /**
+     * Get all layers within the vector tile mapped by name.
+     *
      * @return mapping of layer name to layer
      */
     public Map<String, JtsLayer> getLayersByName() {
@@ -66,6 +72,8 @@ public class JtsMvt {
     }
 
     /**
+     * Get get all layers within the vector tile.
+     *
      * @return insertion-ordered collection of layers
      */
     public Collection<JtsLayer> getLayers() {

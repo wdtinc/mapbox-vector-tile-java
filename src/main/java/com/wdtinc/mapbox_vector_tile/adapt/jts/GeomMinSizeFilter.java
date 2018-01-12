@@ -10,14 +10,19 @@ import com.vividsolutions.jts.geom.*;
  */
 public final class GeomMinSizeFilter implements IGeometryFilter {
 
-    /** Minimum area */
+    /**
+     * Minimum area.
+     */
     private final double minArea;
 
-    /** Minimum length */
+    /**
+     * Minimum length.
+     */
     private final double minLength;
 
     /**
-     * @param minArea minimum area required for a {@link Polygon} or {@link MultiPolygon}
+     * GeomMinSizeFilter.
+     * @param minArea   minimum area required for a {@link Polygon} or {@link MultiPolygon}
      * @param minLength minimum length required for a {@link LineString} or {@link MultiLineString}
      */
     public GeomMinSizeFilter(double minArea, double minLength) {

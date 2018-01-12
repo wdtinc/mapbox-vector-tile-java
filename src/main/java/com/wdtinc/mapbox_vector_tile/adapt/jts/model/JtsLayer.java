@@ -48,6 +48,8 @@ public class JtsLayer {
     }
 
     /**
+     * Get the layer name.
+     *
      * @return name of the layer
      */
     public String getName() {
@@ -81,6 +83,8 @@ public class JtsLayer {
     }
 
     /**
+     * Validate the JtsLayer.
+     *
      * @param name mvt layer name
      * @param geometries geometries in the tile
      * @throws IllegalArgumentException when {@code name} or {@code geometries} are null

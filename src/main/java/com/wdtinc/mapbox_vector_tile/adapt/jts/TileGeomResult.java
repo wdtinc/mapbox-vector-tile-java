@@ -15,13 +15,19 @@ import java.util.Objects;
  */
 public final class TileGeomResult {
 
-    /** Intersection geometry (projection units and coordinates) */
+    /**
+     * Intersection geometry (projection units and coordinates).
+     */
     public final List<Geometry> intGeoms;
 
-    /** Geometry in MVT coordinates (tile extent units, screen coordinates) */
+    /**
+     * Geometry in MVT coordinates (tile extent units, screen coordinates).
+     */
     public final List<Geometry> mvtGeoms;
 
     /**
+     * Create TileGeomResult, which contains the intersection of geometry and MVT geometry.
+     *
      * @param intGeoms geometry intersecting tile
      * @param mvtGeoms geometry for MVT
      * @throws NullPointerException if intGeoms or mvtGeoms are null
