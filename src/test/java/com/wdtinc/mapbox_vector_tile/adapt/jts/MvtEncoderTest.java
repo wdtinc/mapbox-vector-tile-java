@@ -18,10 +18,10 @@ import static org.junit.Assert.assertEquals;
 
 public final class MvtEncoderTest {
 
-    private static final GeometryFactory GEOMETRY_FACORY = new GeometryFactory();
+    private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory();
 
     private static JtsMvt decode(byte[] bytes) throws IOException {
-        return MvtReader.loadMvt(new ByteArrayInputStream(bytes), GEOMETRY_FACORY,
+        return MvtReader.loadMvt(new ByteArrayInputStream(bytes), GEOMETRY_FACTORY,
             new TagKeyValueMapConverter());
     }
 
