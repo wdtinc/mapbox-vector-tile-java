@@ -1,10 +1,13 @@
-package com.wdtinc.mapbox_vector_tile.build;
+package com.wdtinc.mapbox_vector_tile.util;
 
 import java.util.Map;
 
-public class Util {
+/**
+ * Mimic future JDK capabilities for backwards compatibility.
+ */
+public final class JdkUtils {
 
-    private Util() {}
+    private JdkUtils() {}
 
     /**
      * Backwards compatible {@link Map#putIfAbsent} to support &lt; Android API 24.

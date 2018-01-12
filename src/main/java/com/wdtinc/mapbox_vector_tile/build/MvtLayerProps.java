@@ -1,6 +1,7 @@
 package com.wdtinc.mapbox_vector_tile.build;
 
 import com.wdtinc.mapbox_vector_tile.encoding.MvtValue;
+import com.wdtinc.mapbox_vector_tile.util.JdkUtils;
 
 import java.util.*;
 
@@ -34,7 +35,7 @@ public final class MvtLayerProps {
     public int addKey(String key) {
         Objects.requireNonNull(key);
         int nextIndex = keys.size();
-        final Integer mapIndex = Util.putIfAbsent(keys, key, nextIndex);
+        final Integer mapIndex = JdkUtils.putIfAbsent(keys, key, nextIndex);
         return mapIndex == null ? nextIndex : mapIndex;
     }
 
@@ -54,7 +55,7 @@ public final class MvtLayerProps {
         }
 
         int nextIndex = vals.size();
-        final Integer mapIndex = Util.putIfAbsent(vals, value, nextIndex);
+        final Integer mapIndex = JdkUtils.putIfAbsent(vals, value, nextIndex);
         return mapIndex == null ? nextIndex : mapIndex;
     }
 
