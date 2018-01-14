@@ -11,10 +11,7 @@ import com.wdtinc.mapbox_vector_tile.encoding.ZigZag;
 import com.wdtinc.mapbox_vector_tile.util.Vec2d;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -71,8 +68,12 @@ public final class MvtReader {
                                  RingClassifier ringClassifier) throws IOException {
         final JtsMvt jtsMvt;
 
-        try(final InputStream is = new FileInputStream(file)) {
+        InputStream is = null;
+        try {
+            is = new FileInputStream(file);
             jtsMvt = loadMvt(is, geomFactory, tagConverter, ringClassifier);
+        } finally {
+            if (is != null) is.close();
         }
 
         return jtsMvt;

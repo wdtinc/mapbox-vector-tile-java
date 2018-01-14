@@ -2,10 +2,10 @@ package com.wdtinc.mapbox_vector_tile.adapt.jts;
 
 import com.wdtinc.mapbox_vector_tile.VectorTile;
 import com.wdtinc.mapbox_vector_tile.build.MvtLayerProps;
+import com.wdtinc.mapbox_vector_tile.util.JdkUtils;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Convert simple user data {@link Map} where the keys are {@link String} and values are {@link Object}. Supports
@@ -40,7 +40,7 @@ public final class UserDataKeyValueMapConverter implements IUserDataConverter {
      * @param idKey user data {@link Map} key for getting id value.
      */
     public UserDataKeyValueMapConverter(String idKey) {
-        Objects.requireNonNull(idKey);
+        JdkUtils.requireNonNull(idKey);
         this.setId = true;
         this.idKey = idKey;
     }
