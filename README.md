@@ -15,7 +15,7 @@ See:
  * https://www.mapbox.com/vector-tiles/specification/ for overview of the MVT spec.
  * https://github.com/mapbox/vector-tile-spec/tree/master/2.1 for details on the MVT spec.
  * https://developers.google.com/protocol-buffers/ for details on protoc.
- * http://www.vividsolutions.com/jts/ for details on JTS.
+ * https://projects.eclipse.org/projects/locationtech.jts for details on JTS.
 
 ### Dependency
 

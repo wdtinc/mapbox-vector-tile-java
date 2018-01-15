@@ -1,6 +1,6 @@
 package com.wdtinc.mapbox_vector_tile.adapt.jts;
 
-import com.vividsolutions.jts.geom.*;
+import org.locationtech.jts.geom.*;
 
 /**
  * Filter {@link Polygon} and {@link MultiPolygon} by area or

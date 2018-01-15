@@ -1,9 +1,9 @@
 package com.wdtinc.mapbox_vector_tile.adapt.jts;
 
-import com.vividsolutions.jts.algorithm.CGAlgorithms;
-import com.vividsolutions.jts.geom.*;
-import com.vividsolutions.jts.geom.util.AffineTransformation;
-import com.vividsolutions.jts.simplify.TopologyPreservingSimplifier;
+import org.locationtech.jts.algorithm.CGAlgorithms;
+import org.locationtech.jts.geom.*;
+import org.locationtech.jts.geom.util.AffineTransformation;
+import org.locationtech.jts.simplify.TopologyPreservingSimplifier;
 import com.wdtinc.mapbox_vector_tile.*;
 import com.wdtinc.mapbox_vector_tile.build.MvtLayerProps;
 import com.wdtinc.mapbox_vector_tile.encoding.MvtUtil;

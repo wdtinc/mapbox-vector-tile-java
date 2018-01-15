@@ -1,6 +1,6 @@
 package com.wdtinc.mapbox_vector_tile.util;
 
-import com.vividsolutions.jts.geom.*;
+import org.locationtech.jts.geom.*;
 import com.wdtinc.mapbox_vector_tile.VectorTile;
 import com.wdtinc.mapbox_vector_tile.adapt.jts.JtsAdapter;
 
