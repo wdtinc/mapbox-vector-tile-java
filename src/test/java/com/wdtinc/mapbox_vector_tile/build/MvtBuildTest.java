@@ -1,7 +1,7 @@
 package com.wdtinc.mapbox_vector_tile.build;
 
-import com.vividsolutions.jts.algorithm.ConvexHull;
-import com.vividsolutions.jts.geom.*;
+import org.locationtech.jts.algorithm.ConvexHull;
+import org.locationtech.jts.geom.*;
 import com.wdtinc.mapbox_vector_tile.VectorTile;
 import com.wdtinc.mapbox_vector_tile.adapt.jts.*;
 import com.wdtinc.mapbox_vector_tile.adapt.jts.model.JtsLayer;
