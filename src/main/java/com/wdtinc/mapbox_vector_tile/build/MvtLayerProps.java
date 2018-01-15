@@ -33,7 +33,7 @@ public final class MvtLayerProps {
      * @return index of the key
      */
     public int addKey(String key) {
-        Objects.requireNonNull(key);
+        JdkUtils.requireNonNull(key);
         int nextIndex = keys.size();
         final Integer mapIndex = JdkUtils.putIfAbsent(keys, key, nextIndex);
         return mapIndex == null ? nextIndex : mapIndex;
@@ -49,7 +49,7 @@ public final class MvtLayerProps {
      * @see MvtValue#isValidPropValue(Object)
      */
     public int addValue(Object value) {
-        Objects.requireNonNull(value);
+        JdkUtils.requireNonNull(value);
         if(!MvtValue.isValidPropValue(value)) {
             return -1;
         }

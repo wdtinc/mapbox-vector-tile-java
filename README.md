@@ -8,7 +8,7 @@ Provides:
 
  * protoc generated model for Mapbox Vector Tiles v2.1.
  * Provides MVT encoding through use of the Java Topology Suite (JTS).
- * Android v21 compatibility (as of version 3.0.0).
+ * Android API level 15 compatibility (as of version 3.0.0).
 
 See:
 

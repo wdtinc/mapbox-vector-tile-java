@@ -6,6 +6,7 @@ import com.wdtinc.mapbox_vector_tile.VectorTile;
 import com.wdtinc.mapbox_vector_tile.adapt.jts.*;
 import com.wdtinc.mapbox_vector_tile.adapt.jts.model.JtsLayer;
 import com.wdtinc.mapbox_vector_tile.adapt.jts.model.JtsMvt;
+import com.wdtinc.mapbox_vector_tile.util.JdkUtils;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -312,13 +313,13 @@ public final class MvtBuildTest {
             Builder() {}
 
             Builder setLayer(String layerName) {
-                Objects.requireNonNull(layerName);
+                JdkUtils.requireNonNull(layerName);
                 activeLayer = layerName;
                 return this;
             }
 
             Builder add(Geometry geometry) {
-                Objects.requireNonNull(geometry);
+                JdkUtils.requireNonNull(geometry);
                 getActiveLayer().add(geometry);
                 return this;
             }

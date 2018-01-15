@@ -28,4 +28,19 @@ public final class JdkUtils {
         }
         return val;
     }
+
+    /**
+     * This method mimics the behavior of Objects.requireNonNull method to allow
+     * Android API level 15 backward compatibility.
+     *
+     * @param object
+     * @return object
+     * @throws NullPointerException if object is null
+     */
+    public static <T> T requireNonNull(T object) {
+        if (object == null)
+            throw new NullPointerException();
+        return object;
+    }
+
 }

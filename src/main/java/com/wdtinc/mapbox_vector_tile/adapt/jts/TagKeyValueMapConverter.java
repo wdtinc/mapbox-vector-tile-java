@@ -2,6 +2,7 @@ package com.wdtinc.mapbox_vector_tile.adapt.jts;
 
 import com.wdtinc.mapbox_vector_tile.encoding.MvtValue;
 import com.wdtinc.mapbox_vector_tile.VectorTile;
+import com.wdtinc.mapbox_vector_tile.util.JdkUtils;
 
 import java.util.*;
 
@@ -53,7 +54,7 @@ public final class TagKeyValueMapConverter implements ITagConverter {
      * @param idKey key name to use for feature id value
      */
     public TagKeyValueMapConverter(boolean nullIfEmpty, String idKey) {
-        Objects.requireNonNull(idKey);
+        JdkUtils.requireNonNull(idKey);
 
         this.nullIfEmpty = nullIfEmpty;
         this.addId = true;

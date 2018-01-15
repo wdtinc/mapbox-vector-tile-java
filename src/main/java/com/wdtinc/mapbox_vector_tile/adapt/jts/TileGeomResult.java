@@ -4,9 +4,9 @@ import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.wdtinc.mapbox_vector_tile.build.MvtLayerParams;
+import com.wdtinc.mapbox_vector_tile.util.JdkUtils;
 
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Processing result containing intersection geometry and MVT geometry.
@@ -33,8 +33,8 @@ public final class TileGeomResult {
      * @throws NullPointerException if intGeoms or mvtGeoms are null
      */
     public TileGeomResult(List<Geometry> intGeoms, List<Geometry> mvtGeoms) {
-        Objects.requireNonNull(intGeoms);
-        Objects.requireNonNull(mvtGeoms);
+        JdkUtils.requireNonNull(intGeoms);
+        JdkUtils.requireNonNull(mvtGeoms);
         this.intGeoms = intGeoms;
         this.mvtGeoms = mvtGeoms;
     }
