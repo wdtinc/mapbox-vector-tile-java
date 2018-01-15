@@ -7,6 +7,14 @@
 
 - BREAKING CHANGE: Use File rather than Path for Android compatibility.
 
+- Dependency change - JTS to 1.15 under locationtech (Eclipse Licenses).
+
+- Dependency change - protobuf-java to 3.5.1 from 3.0.0-beta-2.
+
+- Dependency change - JUnit to 4.12 from 4.8.2.
+
+- Dependency change - org.slf4j to 1.7.25 from 1.7.12.
+
 #### Fixes
 
 - Fixed guard cases in JTSAdapter to return an empty list when the geometry was not valid for encoding.
