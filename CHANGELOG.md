@@ -3,11 +3,11 @@
 
 #### Features
 
-- Android 21 Compatibility
+- Android API Level 15 Compatibility
 
 - BREAKING CHANGE: Use File rather than Path for Android compatibility.
 
-- Dependency change - JTS to 1.15 under locationtech (Eclipse Licenses).
+- BREAKING CHANGE: Dependency for JTS to 1.15 under locationtech (Eclipse License).
 
 - Dependency change - protobuf-java to 3.5.1 from 3.0.0-beta-2.
 
