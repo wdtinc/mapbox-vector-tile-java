@@ -71,6 +71,10 @@ compile 'com.wdtinc:mapbox-vector-tile:2.0.0'
 
 ### Reading MVTs
 
+Per-tile geometry conversion overview:
+
+![Image of Geometry Conversion Overview](docs/mvt_read_flow.png)
+
 Use MvtReader.loadMvt() to load MVT data from a path or input stream
 into JTS geometry. The TagKeyValueMapConverter instance will convert
 MVT feature tags to a Map with primitive values. The map will be
