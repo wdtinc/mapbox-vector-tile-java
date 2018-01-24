@@ -1,6 +1,20 @@
-[![Build Status](https://travis-ci.org/wdtinc/mapbox-vector-tile-java.svg?branch=master)](https://travis-ci.org/wdtinc/mapbox-vector-tile-java)
 
 # MapBox Vector Tile - Java
+
+[![Build Status](https://travis-ci.org/wdtinc/mapbox-vector-tile-java.svg?branch=master)](https://travis-ci.org/wdtinc/mapbox-vector-tile-java)
+
+Contents
+
+- [Overview](#overview)
+    - [Dependency](#dependency)
+    - [Reading MVTs](#reading-mvts)
+    - [Building and Writing MVTs](#building-and-writing-mvts)
+    - [Buffering Polygons Beyond MVT Extent](#buffering-polygons-beyond-mvt-extent)
+- [Examples](#examples)
+- [Generate VectorTile class using .proto](#how-to-generate-vectortile-class-using-vector_tile.proto)
+- [Issues](#issues)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Overview
 
@@ -21,6 +35,8 @@ See:
 
 #### Maven
 
+Latest version using JTS 15 with android API level 15 support:
+
 ```xml
 <dependency>
     <groupId>com.wdtinc</groupId>
@@ -29,13 +45,35 @@ See:
 </dependency>
 ```
 
+JTS 14 with no android support:
+
+```xml
+<dependency>
+    <groupId>com.wdtinc</groupId>
+    <artifactId>mapbox-vector-tile</artifactId>
+    <version>2.0.0</version>
+</dependency>
+```
+
 #### Gradle
+
+Latest version using JTS 15 with android API level 15 support:
 
 ```
 compile 'com.wdtinc:mapbox-vector-tile:3.0.0'
 ```
 
+JTS 14 with no android support:
+
+```
+compile 'com.wdtinc:mapbox-vector-tile:2.0.0'
+```
+
 ### Reading MVTs
+
+Per-tile geometry conversion overview:
+
+![Image of Geometry Conversion Overview](docs/mvt_read_flow.png)
 
 Use MvtReader.loadMvt() to load MVT data from a path or input stream
 into JTS geometry. The TagKeyValueMapConverter instance will convert
@@ -55,6 +93,7 @@ JtsMvt jtsMvt = MvtReader.loadMvt(
 
 
 // Allow negative-area exterior rings with classifier
+// (recommended for Mapbox compatibility)
 JtsMvt jtsMvt = MvtReader.loadMvt(
         Paths.get("path/to/your.mvt"),
         geomFactory,
@@ -64,18 +103,24 @@ JtsMvt jtsMvt = MvtReader.loadMvt(
 
 ### Building and Writing MVTs
 
+Per-layer geometry conversion overview:
+
+![Image of Geometry Conversion Overview](docs/mvt_build_flow.png)
+
 #### 1) Create or Load JTS Geometry
 
-Create or load any JTS Geometry that will be included in the MVT.
+Create or load any JTS Geometry that will be included in the MVT. The Geometries are assumed
+to be in the global/world units for your target projection. Example: meters for EPSG:3857.
 
 #### 2) Create Tiled JTS Geometry in MVT Coordinates
 
 Create tiled JTS geometry with JtsAdapter#createTileGeom(). MVTs currently
-do not support feature collections so any JTS geometry will be flattened
-to a single level. A TileGeomResult will contain the intersection
-geometry from clipping as well  as the actual MVT geometry that uses
-extent coordinates. The intersection geometry can be used for hierarchical
-processing.
+do not support feature collections so any JTS geometry collections will be flattened
+to a single level. A TileGeomResult will contain the world/global intersection
+geometry from clipping as well as the actual MVT geometry that uses
+tile extent coordinates. The intersection geometry can be used for hierarchical
+processing, while the extent geometry is intended to be encoded as the tile geometry.
+Keep in mind that MVTs use local 'screen coordinates' with inverted y-axis compared with cartesian.
 
 ```java
 IGeometryFilter acceptAllGeomFilter = geometry -> true;
@@ -90,26 +135,56 @@ TileGeomResult tileGeom = JtsAdapter.createTileGeom(
         acceptAllGeomFilter);
 ```
 
+JavaDoc for JtsAdapter.createTileGeom()
+
+```java
+/**
+ * Create geometry clipped and then converted to MVT 'extent' coordinates. Result
+ * contains both clipped geometry (intersection) and transformed geometry for encoding to MVT.
+ *
+ * <p>Uses the same tile and clipping coordinates. May cause rendering issues on boundaries for polygons
+ * or line geometry depending on styling.</p>
+ *
+ * @param g original 'source' geometry
+ * @param tileEnvelope world coordinate bounds for tile
+ * @param geomFactory creates a geometry for the tile envelope
+ * @param mvtLayerParams specifies vector tile properties
+ * @param filter geometry values that fail filter after transforms are removed
+ * @return tile geometry result
+ * @see TileGeomResult
+ */
+public static TileGeomResult createTileGeom(Geometry g,
+                                            Envelope tileEnvelope,
+                                            GeometryFactory geomFactory,
+                                            MvtLayerParams mvtLayerParams,
+                                            IGeometryFilter filter)
+```
+
+
 #### 3) Create MVT Builder, Layers, and Features
 
+After creating a tile's geometry in step 2, it is ready to be encoded in a MVT protobuf.
+
+Note: Applications can perform step 2 multiple times to place geometry in separate MVT layers.
+
 Create the VectorTile.Tile.Builder responsible for the MVT protobuf
-byte array:
+byte array. This is the top-level object for writing the MVT:
 
 ```java
 VectorTile.Tile.Builder tileBuilder = VectorTile.Tile.newBuilder();
 ```
 
-Create an empty layer for the MVT:
+Create an empty layer for the MVT using the MvtLayerBuild#newLayerBuilder() utility function:
 
 ```java
 VectorTile.Tile.Layer.Builder layerBuilder = MvtLayerBuild.newLayerBuilder("myLayerName", layerParams);
 ```
 
-MVT JTS Geometry can be converted to MVT features.
+MVT JTS Geometry from step 2 need to be converted to MVT features.
 
 MvtLayerProps is a supporting class for building MVT layer
 key/value dictionaries. A user data converter will take JTS Geometry
-user data and convert it to MVT tags:
+user data (preserved during MVT tile geometry conversion) and convert it to MVT tags:
 
 ```java
 MvtLayerProps layerProps = new MvtLayerProps();
@@ -117,14 +192,16 @@ IUserDataConverter userDataConverter = new UserDataKeyValueMapConverter();
 List<VectorTile.Tile.Feature> features = JtsAdapter.toFeatures(tileGeom.mvtGeoms, layerProps, userDataConverter);
 ```
 
-Use MvtLayerBuild#writeProps() to add the key/value dictionary to the
-MVT layer.
+Use MvtLayerBuild#writeProps() utility function after JtsAdapter#toFeatures() to add the key/value dictionary to the
+MVT layer:
 
 ```java
 MvtLayerBuild.writeProps(layerBuilder, layerProps);
 ```
 
 #### 4) Write MVT
+
+This example writes the MVT protobuf byte array to an output file.
 
 ```java
 VectorTile.Tile mvt = tileBuilder.build();
@@ -169,7 +246,7 @@ final VectorTile.Tile mvt = encodeMvt(DEFAULT_MVT_PARAMS, bufferedTileGeom);
 
 ## Examples
 
-See tests.
+See [tests](https://github.com/wdtinc/mapbox-vector-tile-java/tree/readme_upgrade/src/test/java/com/wdtinc/mapbox_vector_tile).
 
 ## How to generate VectorTile class using vector_tile.proto
 
