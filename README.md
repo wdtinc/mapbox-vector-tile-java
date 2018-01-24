@@ -1,6 +1,20 @@
-[![Build Status](https://travis-ci.org/wdtinc/mapbox-vector-tile-java.svg?branch=master)](https://travis-ci.org/wdtinc/mapbox-vector-tile-java)
 
 # MapBox Vector Tile - Java
+
+[![Build Status](https://travis-ci.org/wdtinc/mapbox-vector-tile-java.svg?branch=master)](https://travis-ci.org/wdtinc/mapbox-vector-tile-java)
+
+Contents
+
+- [Overview](#overview)
+    - [Dependency](#dependency)
+    - [Reading MVTs](#reading-mvts)
+    - [Building and Writing MVTs](#building-and-writing-mvts)
+    - [Buffering Polygons Beyond MVT Extent](#buffering-polygons-beyond-mvt-extent)
+- [Examples](#examples)
+- [Generate VectorTile class using .proto](#how-to-generate-vectortile-class-using-vector_tile.proto)
+- [Issues](#issues)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Overview
 
@@ -21,6 +35,8 @@ See:
 
 #### Maven
 
+Latest version using JTS 15 with android API level 15 support:
+
 ```xml
 <dependency>
     <groupId>com.wdtinc</groupId>
@@ -29,10 +45,28 @@ See:
 </dependency>
 ```
 
+JTS 14 with no android support:
+
+```xml
+<dependency>
+    <groupId>com.wdtinc</groupId>
+    <artifactId>mapbox-vector-tile</artifactId>
+    <version>2.0.0</version>
+</dependency>
+```
+
 #### Gradle
+
+Latest version using JTS 15 with android API level 15 support:
 
 ```
 compile 'com.wdtinc:mapbox-vector-tile:3.0.0'
+```
+
+JTS 14 with no android support:
+
+```
+compile 'com.wdtinc:mapbox-vector-tile:2.0.0'
 ```
 
 ### Reading MVTs
@@ -55,6 +89,7 @@ JtsMvt jtsMvt = MvtReader.loadMvt(
 
 
 // Allow negative-area exterior rings with classifier
+// (recommended for Mapbox compatibility)
 JtsMvt jtsMvt = MvtReader.loadMvt(
         Paths.get("path/to/your.mvt"),
         geomFactory,
@@ -169,7 +204,7 @@ final VectorTile.Tile mvt = encodeMvt(DEFAULT_MVT_PARAMS, bufferedTileGeom);
 
 ## Examples
 
-See tests.
+See [tests](#src/test/java).
 
 ## How to generate VectorTile class using vector_tile.proto
 
