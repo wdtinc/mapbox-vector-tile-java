@@ -99,6 +99,10 @@ JtsMvt jtsMvt = MvtReader.loadMvt(
 
 ### Building and Writing MVTs
 
+Per-layer geometry conversion overview:
+
+![Image of Geometry Conversion Overview](docs/mvt_build_flow.png)
+
 #### 1) Create or Load JTS Geometry
 
 Create or load any JTS Geometry that will be included in the MVT. The Geometries are assumed
