@@ -204,7 +204,7 @@ final VectorTile.Tile mvt = encodeMvt(DEFAULT_MVT_PARAMS, bufferedTileGeom);
 
 ## Examples
 
-See [tests](#src/test/java).
+See [tests](https://github.com/wdtinc/mapbox-vector-tile-java/tree/readme_upgrade/src/test/java/com/wdtinc/mapbox_vector_tile).
 
 ## How to generate VectorTile class using vector_tile.proto
 
