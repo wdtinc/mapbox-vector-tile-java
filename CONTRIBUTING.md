@@ -1,6 +1,6 @@
 # Contributing/Development
 
-Feedback and pull requests are welocome. See below for details.
+Feedback and pull requests are welcome. See below for details.
 
 ## Pull Request Guidelines
 
