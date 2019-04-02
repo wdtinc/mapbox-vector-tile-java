@@ -17,6 +17,17 @@ public final class JtsLayerTest {
     private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory();
 
     @Test
+    public void testLayerExtent() {
+    		
+    		String layerName = "Points of Interest";
+    		JtsLayer layer = new JtsLayer(layerName, new ArrayList<>(), 2048);
+    		
+    		int actual = 2048;
+    		int expected = layer.getExtent();
+    		assertEquals(expected,actual);
+    }
+    
+    @Test
     public void testLayerName() {
         String layerName = "Points of Interest";
         JtsLayer layer = new JtsLayer(layerName);
@@ -31,7 +42,7 @@ public final class JtsLayerTest {
         String layerName = "Points of Interest";
         List<Geometry> geometries = new ArrayList<>();
 
-        JtsLayer layer = new JtsLayer(layerName, geometries);
+        JtsLayer layer = new JtsLayer(layerName, geometries, Extent.DEFAULT);
 
         String actualName = layer.getName();
         String expectedName = layerName;
@@ -49,7 +60,7 @@ public final class JtsLayerTest {
 
         Point point = createPoint(new int[]{51, 0});
 
-        JtsLayer layer = new JtsLayer(layerName, geometries);
+        JtsLayer layer = new JtsLayer(layerName, geometries, Extent.DEFAULT);
         layer.getGeometries().add(point);
 
         assertTrue(layer.getGeometries().contains(point));
@@ -65,7 +76,7 @@ public final class JtsLayerTest {
         Point point2 = createPoint(new int[]{51, 1});
         Collection<Geometry> points = Arrays.asList(point, point2);
 
-        JtsLayer layer = new JtsLayer(layerName, geometries);
+        JtsLayer layer = new JtsLayer(layerName, geometries, Extent.DEFAULT);
         layer.getGeometries().addAll(points);
 
         assertTrue(layer.getGeometries().containsAll(Arrays.asList(point, point2)));
@@ -85,7 +96,7 @@ public final class JtsLayerTest {
     public void testToString() {
         JtsLayer layer1 = new JtsLayer("apples");
         String actual = layer1.toString();
-        String expected = "Layer{name='apples', geometries=[]}";
+        String expected = "Layer{name='apples', geometries=[], extent=4096}";
         assertEquals(expected, actual);
     }
 
@@ -104,7 +115,7 @@ public final class JtsLayerTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testNullCollection() {
-        new JtsLayer("apples", null);
+        new JtsLayer("apples", null, Extent.DEFAULT);
     }
 
     private Point createPoint(int[] coordinates) {

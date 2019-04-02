@@ -14,7 +14,8 @@ public class JtsLayer {
 
     private final String name;
     private final Collection<Geometry> geometries;
-
+    private final int extent;
+    
     /**
      * Create an empty JTS layer.
      *
@@ -22,7 +23,7 @@ public class JtsLayer {
      * @throws IllegalArgumentException when {@code name} is null
      */
     public JtsLayer(String name) {
-        this(name, new ArrayList<>(0));
+        this(name, new ArrayList<>(0), 4096);
     }
 
     /**
@@ -32,10 +33,11 @@ public class JtsLayer {
      * @param geometries
      * @throws IllegalArgumentException when {@code name} or {@code geometries} are null
      */
-    public JtsLayer(String name, Collection<Geometry> geometries) {
-        validate(name, geometries);
+    public JtsLayer(String name, Collection<Geometry> geometries, int extent) {
+        validate(name, geometries, extent);
         this.name = name;
         this.geometries = geometries;
+        this.extent = extent;
     }
 
     /**
@@ -55,6 +57,15 @@ public class JtsLayer {
     public String getName() {
         return name;
     }
+    
+    /**
+     * Get the layer extent.
+     *
+     * @return extent of the layer
+     */
+    public int getExtent() {
+    		return extent;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -63,6 +74,7 @@ public class JtsLayer {
 
         JtsLayer layer = (JtsLayer) o;
 
+        if (extent != layer.getExtent()) return false;
         if (name != null ? !name.equals(layer.name) : layer.name != null) return false;
         return geometries != null ? geometries.equals(layer.geometries) : layer.geometries == null;
     }
@@ -79,6 +91,7 @@ public class JtsLayer {
         return "Layer{" +
                 "name='" + name + '\'' +
                 ", geometries=" + geometries +
+                ", extent=" + extent+
                 '}';
     }
 
@@ -89,12 +102,15 @@ public class JtsLayer {
      * @param geometries geometries in the tile
      * @throws IllegalArgumentException when {@code name} or {@code geometries} are null
      */
-    private static void validate(String name, Collection<Geometry> geometries) {
+    private static void validate(String name, Collection<Geometry> geometries, int extent) {
         if (name == null) {
             throw new IllegalArgumentException("layer name is null");
         }
         if (geometries == null) {
             throw new IllegalArgumentException("geometry collection is null");
+        }
+        if(0 >= extent) {
+        		throw new IllegalArgumentException("extent is less than or equal to 0");
         }
     }
 }

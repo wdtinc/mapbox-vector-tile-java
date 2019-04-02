@@ -4,6 +4,7 @@ import org.locationtech.jts.algorithm.ConvexHull;
 import org.locationtech.jts.geom.*;
 import com.wdtinc.mapbox_vector_tile.VectorTile;
 import com.wdtinc.mapbox_vector_tile.adapt.jts.*;
+import com.wdtinc.mapbox_vector_tile.adapt.jts.model.Extent;
 import com.wdtinc.mapbox_vector_tile.adapt.jts.model.JtsLayer;
 import com.wdtinc.mapbox_vector_tile.adapt.jts.model.JtsMvt;
 import com.wdtinc.mapbox_vector_tile.util.JdkUtils;
@@ -74,7 +75,7 @@ public final class MvtBuildTest {
 
         assertNotNull(bytes);
 
-        JtsMvt expected = new JtsMvt(singletonList(new JtsLayer(TEST_LAYER_NAME, tileGeom.mvtGeoms)));
+        JtsMvt expected = new JtsMvt(singletonList(new JtsLayer(TEST_LAYER_NAME, tileGeom.mvtGeoms, Extent.DEFAULT)));
 
         // Load multipolygon z0 tile
         JtsMvt actual = MvtReader.loadMvt(
@@ -108,7 +109,7 @@ public final class MvtBuildTest {
 
         assertNotNull(bytes);
 
-        JtsMvt expected = new JtsMvt(singletonList(new JtsLayer(TEST_LAYER_NAME, tileGeom.mvtGeoms)));
+        JtsMvt expected = new JtsMvt(singletonList(new JtsLayer(TEST_LAYER_NAME, tileGeom.mvtGeoms, Extent.DEFAULT)));
 
         // Load multipolygon z0 tile
         JtsMvt actual = MvtReader.loadMvt(
@@ -142,7 +143,7 @@ public final class MvtBuildTest {
 
         assertNotNull(bytes);
 
-        JtsMvt expected = new JtsMvt(singletonList(new JtsLayer(TEST_LAYER_NAME, tileGeom.mvtGeoms)));
+        JtsMvt expected = new JtsMvt(singletonList(new JtsLayer(TEST_LAYER_NAME, tileGeom.mvtGeoms, Extent.DEFAULT)));
 
         // Load multipolygon z0 tile
         JtsMvt actual = MvtReader.loadMvt(
@@ -187,7 +188,7 @@ public final class MvtBuildTest {
         assertNotNull(bytes);
 
         JtsMvt expected = new JtsMvt(singletonList(
-                new JtsLayer(TEST_LAYER_NAME, bufferedTileGeom.mvtGeoms)));
+                new JtsLayer(TEST_LAYER_NAME, bufferedTileGeom.mvtGeoms, Extent.DEFAULT)));
 
         // Load multipolygon z0 tile
         JtsMvt actual = MvtReader.loadMvt(

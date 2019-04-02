@@ -4,6 +4,8 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
+
+import com.wdtinc.mapbox_vector_tile.adapt.jts.model.Extent;
 import com.wdtinc.mapbox_vector_tile.adapt.jts.model.JtsLayer;
 import com.wdtinc.mapbox_vector_tile.adapt.jts.model.JtsMvt;
 import org.junit.Test;
@@ -29,7 +31,7 @@ public final class MvtEncoderTest {
     public void singleLayer() throws IOException {
         Collection<Geometry> geometries = PointGen.australia();
 
-        JtsLayer layer = new JtsLayer("animals", geometries);
+        JtsLayer layer = new JtsLayer("animals", geometries, Extent.DEFAULT);
         JtsMvt mvt = new JtsMvt(singletonList(layer));
 
         final byte[] encoded = MvtEncoder.encode(mvt);
@@ -38,9 +40,9 @@ public final class MvtEncoderTest {
 
     @Test
     public void multipleLayers() throws IOException {
-        JtsLayer layer = new JtsLayer("Australia", PointGen.australia());
-        JtsLayer layer2 = new JtsLayer("United Kingdom", PointGen.uk());
-        JtsLayer layer3 = new JtsLayer("United States of America", PointGen.usa());
+        JtsLayer layer = new JtsLayer("Australia", PointGen.australia(), Extent.DEFAULT);
+        JtsLayer layer2 = new JtsLayer("United Kingdom", PointGen.uk(), Extent.DEFAULT);
+        JtsLayer layer3 = new JtsLayer("United States of America", PointGen.usa(), Extent.DEFAULT);
         JtsMvt mvt = new JtsMvt(asList(layer, layer2, layer3));
 
         final byte[] encoded = MvtEncoder.encode(mvt);
