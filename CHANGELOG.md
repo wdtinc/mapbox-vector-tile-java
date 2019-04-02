@@ -1,4 +1,10 @@
 
+## 3.0.2 (April 2 2019)
+
+#### Features
+
+- Upgrade to JTS 1.15.1 from JTS 1.15.0
+
 ## 3.0.0 (Jan 12 2018)
 
 #### Features
