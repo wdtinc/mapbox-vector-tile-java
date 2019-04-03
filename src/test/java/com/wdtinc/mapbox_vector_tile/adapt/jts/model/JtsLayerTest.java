@@ -42,7 +42,7 @@ public final class JtsLayerTest {
         String layerName = "Points of Interest";
         List<Geometry> geometries = new ArrayList<>();
 
-        JtsLayer layer = new JtsLayer(layerName, geometries, Extent.DEFAULT);
+        JtsLayer layer = new JtsLayer(layerName, geometries);
 
         String actualName = layer.getName();
         String expectedName = layerName;
@@ -60,7 +60,7 @@ public final class JtsLayerTest {
 
         Point point = createPoint(new int[]{51, 0});
 
-        JtsLayer layer = new JtsLayer(layerName, geometries, Extent.DEFAULT);
+        JtsLayer layer = new JtsLayer(layerName, geometries);
         layer.getGeometries().add(point);
 
         assertTrue(layer.getGeometries().contains(point));
@@ -76,7 +76,7 @@ public final class JtsLayerTest {
         Point point2 = createPoint(new int[]{51, 1});
         Collection<Geometry> points = Arrays.asList(point, point2);
 
-        JtsLayer layer = new JtsLayer(layerName, geometries, Extent.DEFAULT);
+        JtsLayer layer = new JtsLayer(layerName, geometries);
         layer.getGeometries().addAll(points);
 
         assertTrue(layer.getGeometries().containsAll(Arrays.asList(point, point2)));
@@ -115,7 +115,7 @@ public final class JtsLayerTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testNullCollection() {
-        new JtsLayer("apples", null, Extent.DEFAULT);
+        new JtsLayer("apples", null);
     }
 
     private Point createPoint(int[] coordinates) {

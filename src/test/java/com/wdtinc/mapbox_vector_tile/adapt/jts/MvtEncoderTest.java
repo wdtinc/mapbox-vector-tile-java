@@ -1,22 +1,24 @@
 package com.wdtinc.mapbox_vector_tile.adapt.jts;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
+import static org.junit.Assert.assertEquals;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Random;
+
+import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
 
-import com.wdtinc.mapbox_vector_tile.adapt.jts.model.Extent;
 import com.wdtinc.mapbox_vector_tile.adapt.jts.model.JtsLayer;
 import com.wdtinc.mapbox_vector_tile.adapt.jts.model.JtsMvt;
-import org.junit.Test;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.util.*;
-
-import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
 
 public final class MvtEncoderTest {
 
@@ -31,7 +33,7 @@ public final class MvtEncoderTest {
     public void singleLayer() throws IOException {
         Collection<Geometry> geometries = PointGen.australia();
 
-        JtsLayer layer = new JtsLayer("animals", geometries, Extent.DEFAULT);
+        JtsLayer layer = new JtsLayer("animals", geometries);
         JtsMvt mvt = new JtsMvt(singletonList(layer));
 
         final byte[] encoded = MvtEncoder.encode(mvt);
@@ -40,9 +42,9 @@ public final class MvtEncoderTest {
 
     @Test
     public void multipleLayers() throws IOException {
-        JtsLayer layer = new JtsLayer("Australia", PointGen.australia(), Extent.DEFAULT);
-        JtsLayer layer2 = new JtsLayer("United Kingdom", PointGen.uk(), Extent.DEFAULT);
-        JtsLayer layer3 = new JtsLayer("United States of America", PointGen.usa(), Extent.DEFAULT);
+        JtsLayer layer = new JtsLayer("Australia", PointGen.australia());
+        JtsLayer layer2 = new JtsLayer("United Kingdom", PointGen.uk());
+        JtsLayer layer3 = new JtsLayer("United States of America", PointGen.usa());
         JtsMvt mvt = new JtsMvt(asList(layer, layer2, layer3));
 
         final byte[] encoded = MvtEncoder.encode(mvt);

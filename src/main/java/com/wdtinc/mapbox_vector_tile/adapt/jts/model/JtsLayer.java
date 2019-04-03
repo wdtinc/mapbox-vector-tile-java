@@ -2,6 +2,8 @@ package com.wdtinc.mapbox_vector_tile.adapt.jts.model;
 
 import org.locationtech.jts.geom.Geometry;
 
+import com.wdtinc.mapbox_vector_tile.build.MvtLayerParams;
+
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -23,7 +25,7 @@ public class JtsLayer {
      * @throws IllegalArgumentException when {@code name} is null
      */
     public JtsLayer(String name) {
-        this(name, new ArrayList<>(0), 4096);
+        this(name, new ArrayList<>(0), MvtLayerParams.DEFAULT.extent);
     }
 
     /**
@@ -33,8 +35,21 @@ public class JtsLayer {
      * @param geometries
      * @throws IllegalArgumentException when {@code name} or {@code geometries} are null
      */
+    public JtsLayer(String name, Collection<Geometry> geometries) {
+    	 	this(name, geometries, MvtLayerParams.DEFAULT.extent);
+    }
+    
+    /**
+     * Create a JTS layer with geometries.
+     *
+     * @param name layer name
+     * @param geometries
+     * @param extent
+     * @throws IllegalArgumentException when {@code name} or {@code geometries} are null 
+     * or {@code extent} is less than or equal to 0
+     */
     public JtsLayer(String name, Collection<Geometry> geometries, int extent) {
-        validate(name, geometries, extent);
+    		validate(name, geometries, extent);
         this.name = name;
         this.geometries = geometries;
         this.extent = extent;
@@ -109,7 +124,7 @@ public class JtsLayer {
         if (geometries == null) {
             throw new IllegalArgumentException("geometry collection is null");
         }
-        if(0 >= extent) {
+        if (extent <= 0) {
         		throw new IllegalArgumentException("extent is less than or equal to 0");
         }
     }
