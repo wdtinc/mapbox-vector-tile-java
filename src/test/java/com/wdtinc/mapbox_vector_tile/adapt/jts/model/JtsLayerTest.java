@@ -104,7 +104,7 @@ public final class JtsLayerTest {
     public void testHash() {
         JtsLayer layer = new JtsLayer("code");
         int actual = layer.hashCode();
-        int expected = 94834612;
+        int expected = -1354967378;
         assertEquals(expected, actual);
     }
 

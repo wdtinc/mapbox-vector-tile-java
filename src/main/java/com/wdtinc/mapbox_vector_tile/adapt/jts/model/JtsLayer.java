@@ -97,6 +97,7 @@ public class JtsLayer {
     @Override
     public int hashCode() {
         int result = name != null ? name.hashCode() : 0;
+        result = 31 * result + extent;
         result = 31 * result + (geometries != null ? geometries.hashCode() : 0);
         return result;
     }
