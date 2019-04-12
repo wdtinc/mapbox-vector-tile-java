@@ -36,7 +36,7 @@ public class JtsLayer {
      * @throws IllegalArgumentException when {@code name} or {@code geometries} are null
      */
     public JtsLayer(String name, Collection<Geometry> geometries) {
-    	 	this(name, geometries, MvtLayerParams.DEFAULT.extent);
+        this(name, geometries, MvtLayerParams.DEFAULT.extent);
     }
     
     /**
@@ -49,7 +49,7 @@ public class JtsLayer {
      * or {@code extent} is less than or equal to 0
      */
     public JtsLayer(String name, Collection<Geometry> geometries, int extent) {
-    		validate(name, geometries, extent);
+        validate(name, geometries, extent);
         this.name = name;
         this.geometries = geometries;
         this.extent = extent;
@@ -79,7 +79,7 @@ public class JtsLayer {
      * @return extent of the layer
      */
     public int getExtent() {
-    		return extent;
+        return extent;
     }
 
     @Override
@@ -126,7 +126,7 @@ public class JtsLayer {
             throw new IllegalArgumentException("geometry collection is null");
         }
         if (extent <= 0) {
-        		throw new IllegalArgumentException("extent is less than or equal to 0");
+            throw new IllegalArgumentException("extent is less than or equal to 0");
         }
     }
 }

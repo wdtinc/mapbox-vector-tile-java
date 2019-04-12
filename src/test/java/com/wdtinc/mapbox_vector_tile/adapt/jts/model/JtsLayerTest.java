@@ -18,13 +18,12 @@ public final class JtsLayerTest {
 
     @Test
     public void testLayerExtent() {
-    		
-    		String layerName = "Points of Interest";
-    		JtsLayer layer = new JtsLayer(layerName, new ArrayList<>(), 2048);
-    		
-    		int actual = 2048;
-    		int expected = layer.getExtent();
-    		assertEquals(expected,actual);
+        String layerName = "Points of Interest";
+        JtsLayer layer = new JtsLayer(layerName, new ArrayList<>(), 2048);
+
+        int actual = 2048;
+        int expected = layer.getExtent();
+        assertEquals(expected,actual);
     }
     
     @Test
