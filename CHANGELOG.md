@@ -1,4 +1,10 @@
 
+## 3.1.0 (April 12 2019)
+
+#### Features
+
+- Add extent property to JtsLayer when reading an MVT from MvtReader. Does not effect the extent when writing a JtsLayer unless passed as an option in MvtLayerParams. 
+
 ## 3.0.2 (April 2 2019)
 
 #### Features

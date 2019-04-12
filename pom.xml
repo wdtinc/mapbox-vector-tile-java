@@ -6,7 +6,7 @@
 
     <groupId>com.wdtinc</groupId>
     <artifactId>mapbox-vector-tile</artifactId>
-    <version>3.0.2</version>
+    <version>3.1.0</version>
     <packaging>jar</packaging>
 
     <name>Mapbox Vector Tiles - Java</name>
