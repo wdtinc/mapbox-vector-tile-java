@@ -17,6 +17,16 @@ public final class JtsLayerTest {
     private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory();
 
     @Test
+    public void testLayerExtent() {
+        String layerName = "Points of Interest";
+        JtsLayer layer = new JtsLayer(layerName, new ArrayList<>(), 2048);
+
+        int actual = 2048;
+        int expected = layer.getExtent();
+        assertEquals(expected,actual);
+    }
+    
+    @Test
     public void testLayerName() {
         String layerName = "Points of Interest";
         JtsLayer layer = new JtsLayer(layerName);
@@ -85,7 +95,7 @@ public final class JtsLayerTest {
     public void testToString() {
         JtsLayer layer1 = new JtsLayer("apples");
         String actual = layer1.toString();
-        String expected = "Layer{name='apples', geometries=[]}";
+        String expected = "Layer{name='apples', geometries=[], extent=4096}";
         assertEquals(expected, actual);
     }
 
@@ -93,7 +103,7 @@ public final class JtsLayerTest {
     public void testHash() {
         JtsLayer layer = new JtsLayer("code");
         int actual = layer.hashCode();
-        int expected = 94834612;
+        int expected = -1354967378;
         assertEquals(expected, actual);
     }
 

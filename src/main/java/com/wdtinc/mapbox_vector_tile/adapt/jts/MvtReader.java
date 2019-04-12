@@ -145,7 +145,7 @@ public final class MvtReader {
                 }
             }
 
-            jtsLayers.add(new JtsLayer(nextLayer.getName(), layerGeoms));
+            jtsLayers.add(new JtsLayer(nextLayer.getName(), layerGeoms, nextLayer.getExtent()));
         }
 
 
