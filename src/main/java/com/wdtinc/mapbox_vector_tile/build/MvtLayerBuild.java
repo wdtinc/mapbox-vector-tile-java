@@ -2,7 +2,6 @@ package com.wdtinc.mapbox_vector_tile.build;
 
 import com.wdtinc.mapbox_vector_tile.VectorTile;
 import com.wdtinc.mapbox_vector_tile.encoding.MvtValue;
-import java.util.Iterator;
 
 /**
  * Utility methods for building Mapbox-Vector-Tile layers.
