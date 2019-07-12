@@ -2,7 +2,10 @@ package com.wdtinc.mapbox_vector_tile.adapt.jts;
 
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.MultiPolygon;
+import org.locationtech.jts.geom.Polygon;
+
 import com.wdtinc.mapbox_vector_tile.adapt.jts.model.JtsLayer;
 import com.wdtinc.mapbox_vector_tile.adapt.jts.model.JtsMvt;
 import com.wdtinc.mapbox_vector_tile.util.JtsGeomStats;
@@ -22,12 +25,14 @@ import static org.junit.Assert.fail;
  */
 public final class MvtReaderTest {
 
+    private static final double DOUBLE_DELTA = 1e-10;
+    
     @Test
     public void testLayers() {
         try {
             JtsMvt result = MvtReader.loadMvt(
                 new File("src/test/resources/vec_tile_test/game.mvt"),
-                new GeometryFactory(),
+                createGeometryFactory(),
                 new TagKeyValueMapConverter());
 
             final Collection<JtsLayer> layerValues = result.getLayers();
@@ -79,6 +84,36 @@ public final class MvtReaderTest {
 
             assertEquals(1, geoms.size());
             assertTrue(geoms.get(0) instanceof MultiPolygon);
+            final MultiPolygon multiPolygon = (MultiPolygon) geoms.get(0);
+            assertEquals(2, multiPolygon.getNumGeometries());
+            {
+                final Polygon polygon = (Polygon) multiPolygon.getGeometryN(0);
+                assertEquals(0, polygon.getNumInteriorRing());
+                final LineString exteriorRing = polygon.getExteriorRing();
+                assertEquals(4, exteriorRing.getNumPoints());
+                assertEquals(2059.0, exteriorRing.getCoordinateN(0).x, DOUBLE_DELTA);
+                assertEquals(2048.0, exteriorRing.getCoordinateN(0).y, DOUBLE_DELTA);
+                assertEquals(2048.0, exteriorRing.getCoordinateN(1).x, DOUBLE_DELTA);
+                assertEquals(2048.0, exteriorRing.getCoordinateN(1).y, DOUBLE_DELTA);
+                assertEquals(2059.0, exteriorRing.getCoordinateN(2).x, DOUBLE_DELTA);
+                assertEquals(2037.0, exteriorRing.getCoordinateN(2).y, DOUBLE_DELTA);
+                assertEquals(2059.0, exteriorRing.getCoordinateN(3).x, DOUBLE_DELTA);
+                assertEquals(2048.0, exteriorRing.getCoordinateN(3).y, DOUBLE_DELTA);
+            }
+            {
+                final Polygon polygon = (Polygon) multiPolygon.getGeometryN(1);
+                assertEquals(0, polygon.getNumInteriorRing());
+                final LineString exteriorRing = polygon.getExteriorRing();
+                assertEquals(4, exteriorRing.getNumPoints());
+                assertEquals(2037.0, exteriorRing.getCoordinateN(0).x, DOUBLE_DELTA);
+                assertEquals(2059.0, exteriorRing.getCoordinateN(0).y, DOUBLE_DELTA);
+                assertEquals(2037.0, exteriorRing.getCoordinateN(1).x, DOUBLE_DELTA);
+                assertEquals(2048.0, exteriorRing.getCoordinateN(1).y, DOUBLE_DELTA);
+                assertEquals(2048.0, exteriorRing.getCoordinateN(2).x, DOUBLE_DELTA);
+                assertEquals(2048.0, exteriorRing.getCoordinateN(2).y, DOUBLE_DELTA);
+                assertEquals(2037.0, exteriorRing.getCoordinateN(3).x, DOUBLE_DELTA);
+                assertEquals(2059.0, exteriorRing.getCoordinateN(3).y, DOUBLE_DELTA);
+            }
         } catch (IOException e) {
             fail(e.getMessage());
         }
@@ -95,7 +130,7 @@ public final class MvtReaderTest {
     private static JtsMvt loadMvt(String file) throws IOException {
         return MvtReader.loadMvt(
                 new File(file),
-                new GeometryFactory(),
+                createGeometryFactory(),
                 new TagKeyValueMapConverter());
     }
 
@@ -103,8 +138,12 @@ public final class MvtReaderTest {
                                   MvtReader.RingClassifier ringClassifier) throws IOException {
         return MvtReader.loadMvt(
                 new File(file),
-                new GeometryFactory(),
+                createGeometryFactory(),
                 new TagKeyValueMapConverter(),
                 ringClassifier);
+    }
+    
+    private static GeometryFactory createGeometryFactory() {
+        return new GeometryFactory();
     }
 }
