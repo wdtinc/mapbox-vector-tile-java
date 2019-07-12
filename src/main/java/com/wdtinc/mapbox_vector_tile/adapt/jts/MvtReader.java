@@ -217,7 +217,6 @@ public final class MvtReader {
 
         final CoordinateSequence coordSeq = geomFactory.getCoordinateSequenceFactory().create(cmdLength, 2);
         int coordIndex = 0;
-        Coordinate nextCoord;
 
         while(i < geomCmds.size() - 1) {
             cursor.add(
@@ -225,9 +224,9 @@ public final class MvtReader {
                     ZigZag.decode(geomCmds.get(i++))
             );
 
-            nextCoord = coordSeq.getCoordinate(coordIndex++);
-            nextCoord.setOrdinate(0, cursor.x);
-            nextCoord.setOrdinate(1, cursor.y);
+            coordSeq.setOrdinate(coordIndex, 0, cursor.x);
+            coordSeq.setOrdinate(coordIndex, 1, cursor.y);
+            coordIndex++;
         }
 
         return coordSeq.size() == 1 ? geomFactory.createPoint(coordSeq) : geomFactory.createMultiPoint(coordSeq);
@@ -256,7 +255,6 @@ public final class MvtReader {
         GeomCmd cmd;
         List<LineString> geoms = new ArrayList<>(1);
         CoordinateSequence nextCoordSeq;
-        Coordinate nextCoord;
 
         while(i <= geomCmds.size() - MIN_LINE_STRING_LEN) {
 
@@ -304,9 +302,8 @@ public final class MvtReader {
             nextCoordSeq = geomFactory.getCoordinateSequenceFactory().create(1 + cmdLength, 2);
 
             // Set first point from MoveTo command
-            nextCoord = nextCoordSeq.getCoordinate(0);
-            nextCoord.setOrdinate(0, cursor.x);
-            nextCoord.setOrdinate(1, cursor.y);
+            nextCoordSeq.setOrdinate(0, 0, cursor.x);
+            nextCoordSeq.setOrdinate(0, 1, cursor.y);
 
             // Set remaining points from LineTo command
             for(int lineToIndex = 0; lineToIndex < cmdLength; ++lineToIndex) {
@@ -317,9 +314,8 @@ public final class MvtReader {
                         ZigZag.decode(geomCmds.get(i++))
                 );
 
-                nextCoord = nextCoordSeq.getCoordinate(lineToIndex + 1);
-                nextCoord.setOrdinate(0, cursor.x);
-                nextCoord.setOrdinate(1, cursor.y);
+                nextCoordSeq.setOrdinate(lineToIndex + 1, 0, cursor.x);
+                nextCoordSeq.setOrdinate(lineToIndex + 1, 1, cursor.y);
             }
 
             geoms.add(geomFactory.createLineString(nextCoordSeq));
@@ -355,7 +351,6 @@ public final class MvtReader {
         GeomCmd cmd;
         List<LinearRing> rings = new ArrayList<>(1);
         CoordinateSequence nextCoordSeq;
-        Coordinate nextCoord;
 
         while(i <= geomCmds.size() - MIN_POLYGON_LEN) {
 
@@ -403,9 +398,8 @@ public final class MvtReader {
             nextCoordSeq = geomFactory.getCoordinateSequenceFactory().create(2 + cmdLength, 2);
 
             // Set first point from MoveTo command
-            nextCoord = nextCoordSeq.getCoordinate(0);
-            nextCoord.setOrdinate(0, cursor.x);
-            nextCoord.setOrdinate(1, cursor.y);
+            nextCoordSeq.setOrdinate(0, 0, cursor.x);
+            nextCoordSeq.setOrdinate(0, 1, cursor.y);
 
             // Set remaining points from LineTo command
             for(int lineToIndex = 0; lineToIndex < cmdLength; ++lineToIndex) {
@@ -416,9 +410,8 @@ public final class MvtReader {
                         ZigZag.decode(geomCmds.get(i++))
                 );
 
-                nextCoord = nextCoordSeq.getCoordinate(lineToIndex + 1);
-                nextCoord.setOrdinate(0, cursor.x);
-                nextCoord.setOrdinate(1, cursor.y);
+                nextCoordSeq.setOrdinate(lineToIndex + 1, 0, cursor.x);
+                nextCoordSeq.setOrdinate(lineToIndex + 1, 1, cursor.y);
             }
 
 
@@ -436,9 +429,8 @@ public final class MvtReader {
             }
 
             // Set last point from ClosePath command
-            nextCoord = nextCoordSeq.getCoordinate(nextCoordSeq.size() - 1);
-            nextCoord.setOrdinate(0, nextCoordSeq.getOrdinate(0, 0));
-            nextCoord.setOrdinate(1, nextCoordSeq.getOrdinate(0, 1));
+            nextCoordSeq.setOrdinate(nextCoordSeq.size() - 1, 0, nextCoordSeq.getOrdinate(0, 0));
+            nextCoordSeq.setOrdinate(nextCoordSeq.size() - 1, 1, nextCoordSeq.getOrdinate(0, 1));
 
             rings.add(geomFactory.createLinearRing(nextCoordSeq));
         }
