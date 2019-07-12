@@ -1,6 +1,6 @@
 package com.wdtinc.mapbox_vector_tile.adapt.jts;
 
-import org.locationtech.jts.algorithm.CGAlgorithms;
+import org.locationtech.jts.algorithm.Area;
 import org.locationtech.jts.geom.*;
 import com.wdtinc.mapbox_vector_tile.adapt.jts.model.JtsLayer;
 import com.wdtinc.mapbox_vector_tile.adapt.jts.model.JtsMvt;
@@ -494,7 +494,7 @@ public final class MvtReader {
             LinearRing outerPoly = null;
 
             for(LinearRing r : rings) {
-                double area = CGAlgorithms.signedArea(r.getCoordinates());
+                double area = Area.ofRingSigned(r.getCoordinates());
 
                 if(!r.isRing()) {
                     continue; // sanity check, could probably be handled in a isSimple() check
@@ -550,7 +550,7 @@ public final class MvtReader {
             LinearRing outerPoly = null;
 
             for(LinearRing r : rings) {
-                double area = CGAlgorithms.signedArea(r.getCoordinates());
+                double area = Area.ofRingSigned(r.getCoordinates());
 
                 if(!r.isRing()) {
                     continue; // sanity check, could probably be handled in a isSimple() check
