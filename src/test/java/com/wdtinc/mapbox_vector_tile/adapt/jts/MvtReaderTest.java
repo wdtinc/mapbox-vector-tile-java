@@ -5,6 +5,8 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.MultiPolygon;
 import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.PrecisionModel;
+import org.locationtech.jts.geom.impl.PackedCoordinateSequenceFactory;
 
 import com.wdtinc.mapbox_vector_tile.adapt.jts.model.JtsLayer;
 import com.wdtinc.mapbox_vector_tile.adapt.jts.model.JtsMvt;
@@ -26,6 +28,9 @@ import static org.junit.Assert.fail;
 public final class MvtReaderTest {
 
     private static final double DOUBLE_DELTA = 1e-10;
+    
+    private static final int NUMBER_OF_DIMENSIONS = 2;
+    private static final int SRID = 0;
     
     @Test
     public void testLayers() {
@@ -144,6 +149,9 @@ public final class MvtReaderTest {
     }
     
     private static GeometryFactory createGeometryFactory() {
-        return new GeometryFactory();
+        final PrecisionModel precisionModel = new PrecisionModel();
+        final PackedCoordinateSequenceFactory coordinateSequenceFactory = 
+                new PackedCoordinateSequenceFactory(PackedCoordinateSequenceFactory.DOUBLE, NUMBER_OF_DIMENSIONS);
+        return new GeometryFactory(precisionModel, SRID, coordinateSequenceFactory);
     }
 }
