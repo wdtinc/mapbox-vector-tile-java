@@ -60,7 +60,7 @@ JTS 14 with no android support:
 Latest version using JTS 15 with android API level 15 support:
 
 ```
-compile 'com.wdtinc:mapbox-vector-tile:3.0.0'
+compile 'com.wdtinc:mapbox-vector-tile:3.1.1'
 ```
 
 JTS 14 with no android support:
