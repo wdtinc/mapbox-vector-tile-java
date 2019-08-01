@@ -5,6 +5,8 @@
 
 - (27) Fix multiline string conversion to MVT feature where final segment could be missing.
 
+- (36) Polygon orientation (winding order)
+
 - (38) Support PackedCoordinateSequence in MvtReader
 
 ## 3.1.0 (April 12 2019)
