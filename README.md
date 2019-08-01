@@ -41,7 +41,7 @@ Latest version using JTS 15 with android API level 15 support:
 <dependency>
     <groupId>com.wdtinc</groupId>
     <artifactId>mapbox-vector-tile</artifactId>
-    <version>3.0.2</version>
+    <version>3.1.1</version>
 </dependency>
 ```
 
