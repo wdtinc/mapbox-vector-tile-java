@@ -275,7 +275,7 @@ public final class JtsAdapter {
      *
      * <p>Each geometry will have its own ID.</p>
      *
-     * @param flatGeoms flat list of JTS geometry to convert
+     * @param flatGeoms flat list of JTS geometry (in MVT coordinates) to convert
      * @param layerProps layer properties for tagging features
      * @param userDataConverter convert {@link Geometry#userData} to MVT feature tags
      * @see #flatFeatureList(Geometry)
@@ -497,17 +497,31 @@ public final class JtsAdapter {
 
         final Coordinate[] geomCoords = geom.getCoordinates();
 
-        // Check geometry for repeated end points
-        final int repeatEndCoordCount = countCoordRepeatReverse(geomCoords);
-        final int minExpGeomCoords = geomCoords.length - repeatEndCoordCount;
+        // Calculate the geometry coordinate count for processing that supports ignoring repeated final points
+        final int geomProcCoordCount;
+        if(closeEnabled) {
+
+            // Check geometry for repeated end points when closing (Polygon rings)
+            final int repeatEndCoordCount = countCoordRepeatReverse(geomCoords);
+            geomProcCoordCount = geomCoords.length - repeatEndCoordCount;
+
+        } else {
+
+            // No closing (Line strings)
+            geomProcCoordCount = geomCoords.length;
+        }
+
 
         // Guard/Optimization: Not enough geometry coordinates for a line
-        if(minExpGeomCoords < 2) {
+        if(geomProcCoordCount < 2) {
             return Collections.emptyList();
         }
 
+        // Save cursor position if failure creating geometry occurs
+        final Vec2d origCursorPos = new Vec2d(cursor);
+
         /** Tile commands and parameters */
-        final List<Integer> geomCmds = new ArrayList<>(geomCmdBuffLenLines(minExpGeomCoords, closeEnabled));
+        final List<Integer> geomCmds = new ArrayList<>(geomCmdBuffLenLines(geomProcCoordCount, closeEnabled));
 
         /** Holds next MVT coordinate */
         final Vec2d mvtPos = new Vec2d();
@@ -532,7 +546,7 @@ public final class JtsAdapter {
         /** Length of 'LineTo' draw command */
         int lineToLength = 0;
 
-        for(int i = 1; i < minExpGeomCoords; ++i) {
+        for(int i = 1; i < geomProcCoordCount; ++i) {
             nextCoord = geomCoords[i];
             mvtPos.set(nextCoord.x, nextCoord.y);
 
@@ -555,6 +569,9 @@ public final class JtsAdapter {
             return geomCmds;
 
         } else {
+
+            // Revert cursor position
+            cursor.set(origCursorPos);
 
             // Invalid geometry, need at least 1 'LineTo' value to make a Multiline or Polygon
             return Collections.emptyList();
