@@ -259,7 +259,7 @@ public final class JtsAdapter {
      *
      * @param geometry JTS geometry to convert
      * @param layerProps layer properties for tagging features
-     * @param userDataConverter convert {@link Geometry#userData} to MVT feature tags
+     * @param userDataConverter convert {@link Geometry#getUserData()} to MVT feature tags
      * @see #flatFeatureList(Geometry)
      * @see #createTileGeom(Geometry, Envelope, GeometryFactory, MvtLayerParams, IGeometryFilter)
      */
@@ -277,7 +277,7 @@ public final class JtsAdapter {
      *
      * @param flatGeoms flat list of JTS geometry (in MVT coordinates) to convert
      * @param layerProps layer properties for tagging features
-     * @param userDataConverter convert {@link Geometry#userData} to MVT feature tags
+     * @param userDataConverter convert {@link Geometry#getUserData()} to MVT feature tags
      * @see #flatFeatureList(Geometry)
      * @see #createTileGeom(Geometry, Envelope, GeometryFactory, MvtLayerParams, IGeometryFilter)
      */
@@ -309,7 +309,7 @@ public final class JtsAdapter {
     /**
      * Create and return a feature from a geometry. Returns null on failure.
      *
-     * @param geom flat geometry via {@link #flatFeatureList(Geometry)} that can be translated to a feature
+     * @param geom flat geometry (in MVT coordinates) via {@link #flatFeatureList(Geometry)} that can be translated to a feature
      * @param cursor vector tile cursor position
      * @param layerProps layer properties for tagging features
      * @return new tile feature instance, or null on failure
@@ -362,8 +362,9 @@ public final class JtsAdapter {
                     continue;
                 }
 
-                // Check CCW Winding (must be positive area)
-                if(exteriorArea < 0d) {
+                // Check CCW Winding (must be positive area in original coordinate system, MVT is positive-y-down, so inequality is flipped)
+                // See: https://docs.mapbox.com/vector-tiles/specification/#winding-order
+                if(exteriorArea > 0d) {
                     CoordinateArrays.reverse(exteriorRing.getCoordinates());
                 }
 
@@ -381,8 +382,9 @@ public final class JtsAdapter {
                         continue;
                     }
 
-                    // Check CW Winding (must be negative area)
-                    if(interiorArea > 0d) {
+                    // Check CW Winding (must be negative area in original coordinate system, MVT is positive-y-down, so inequality is flipped)
+                    // See: https://docs.mapbox.com/vector-tiles/specification/#winding-order
+                    if(interiorArea < 0d) {
                         CoordinateArrays.reverse(nextInteriorRing.getCoordinates());
                     }
 
