@@ -47,7 +47,7 @@ public final class MvtReader {
     public static JtsMvt loadMvt(File file,
                                  GeometryFactory geomFactory,
                                  ITagConverter tagConverter) throws IOException {
-        return loadMvt(file, geomFactory, tagConverter, RING_CLASSIFIER_V2_1);
+        return loadMvt(file, geomFactory, tagConverter, RING_CLASSIFIER_DEFAULT);
     }
 
     /**
@@ -94,7 +94,7 @@ public final class MvtReader {
     public static JtsMvt loadMvt(InputStream is,
                                  GeometryFactory geomFactory,
                                  ITagConverter tagConverter) throws IOException {
-        return loadMvt(is, geomFactory, tagConverter, RING_CLASSIFIER_V2_1);
+        return loadMvt(is, geomFactory, tagConverter, RING_CLASSIFIER_DEFAULT);
     }
 
     /**
@@ -476,6 +476,11 @@ public final class MvtReader {
      * Area from surveyor formula must be positive for exterior rings. Obeys V2.1 spec.
      */
     public static final RingClassifier RING_CLASSIFIER_V2_1 = new PolyRingClassifierV2_1();
+
+    /**
+     * Default ring classifier when it is not specified.
+     */
+    private static final RingClassifier RING_CLASSIFIER_DEFAULT = RING_CLASSIFIER_V1;
 
 
     /**
