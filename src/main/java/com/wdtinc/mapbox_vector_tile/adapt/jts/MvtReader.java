@@ -479,9 +479,10 @@ public final class MvtReader {
 
 
     /**
-     * Area from surveyor formula must be positive for exterior rings. Obeys V2.1 spec.
+     * Area from surveyor formula must be positive for exterior rings (but area check is flipped because MVT is Y-DOWN).
+     * Obeys V2.1 spec.
      *
-     * @see CGAlgorithms#signedArea(Coordinate[])
+     * @see Area#ofRingSigned(Coordinate[])
      */
     private static final class PolyRingClassifierV2_1 implements RingClassifier {
 
@@ -494,6 +495,9 @@ public final class MvtReader {
             LinearRing outerPoly = null;
 
             for(LinearRing r : rings) {
+
+                // Area.ofRingSigned() area is positive if the ring is oriented CW, negative if the
+                // ring is oriented CCW, and zero if the ring is degenerate or flat
                 double area = Area.ofRingSigned(r.getCoordinates());
 
                 if(!r.isRing()) {
@@ -504,13 +508,13 @@ public final class MvtReader {
                     continue; // zero-area
                 }
 
-                if(area > 0d) {
+                if(area < 0d) {
                     if(outerPoly != null) {
                         polygons.add(geomFactory.createPolygon(outerPoly, holes.toArray(new LinearRing[holes.size()])));
                         holes.clear();
                     }
 
-                    // Pos --> CCW, Outer
+                    // Neg (in Y-DOWN MVT) --> Pos CW, Outer
                     outerPoly = r;
                     outerArea = area;
 
@@ -520,7 +524,7 @@ public final class MvtReader {
                         continue; // Holes must have less area, could probably be handled in a isSimple() check
                     }
 
-                    // Neg --> CW, Hole
+                    // Pos (in Y-DOWN MVT) --> Neg CCW, Hole
                     holes.add(r);
                 }
             }
@@ -535,9 +539,10 @@ public final class MvtReader {
 
 
     /**
-     * Area for surveyor formula may be positive or negative for exterior rings. Mimics Mapbox parsers supporting V1.
+     * Area for surveyor formula may be positive or negative for exterior rings. Mimics Mapbox parsers supporting V1. The
+     * outer ring winding order is established by the first polygon ring.
      *
-     * @see CGAlgorithms#signedArea(Coordinate[])
+     * @see Area#ofRingSigned(Coordinate[])
      */
     private static final class PolyRingClassifierV1 implements RingClassifier {
 
@@ -550,6 +555,9 @@ public final class MvtReader {
             LinearRing outerPoly = null;
 
             for(LinearRing r : rings) {
+
+                // Area.ofRingSigned() area is positive if the ring is oriented CW, negative if the
+                // ring is oriented CCW, and zero if the ring is degenerate or flat
                 double area = Area.ofRingSigned(r.getCoordinates());
 
                 if(!r.isRing()) {
@@ -560,23 +568,26 @@ public final class MvtReader {
                     continue; // zero-area
                 }
 
+                // Outer ring winding order established by first polygon ring
+                // If first ring (no outer) or next ring winding order matches outer ring winding order...
                 if(outerPoly == null || (outerArea < 0 == area < 0)) {
+
+                    // Outer
                     if(outerPoly != null) {
                         polygons.add(geomFactory.createPolygon(outerPoly, holes.toArray(new LinearRing[holes.size()])));
                         holes.clear();
                     }
 
-                    // Pos --> CCW, Outer
                     outerPoly = r;
                     outerArea = area;
 
                 } else {
 
+                    // Hole
                     if(Math.abs(outerArea) < Math.abs(area)) {
                         continue; // Holes must have less area, could probably be handled in a isSimple() check
                     }
 
-                    // Neg --> CW, Hole
                     holes.add(r);
                 }
             }
