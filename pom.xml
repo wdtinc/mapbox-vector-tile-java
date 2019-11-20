@@ -152,14 +152,14 @@
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
-            <version>3.5.1</version>
+            <version>3.6.1</version>
         </dependency>
 
         <!-- Geometry model -->
         <dependency>
             <groupId>org.locationtech.jts</groupId>
             <artifactId>jts-core</artifactId>
-            <version>1.15.1</version>
+            <version>1.16.0</version>
         </dependency>
 
         <!-- Testing -->
