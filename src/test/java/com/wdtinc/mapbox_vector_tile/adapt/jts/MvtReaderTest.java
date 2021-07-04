@@ -150,8 +150,7 @@ public final class MvtReaderTest {
     
     private static GeometryFactory createGeometryFactory() {
         final PrecisionModel precisionModel = new PrecisionModel();
-        final PackedCoordinateSequenceFactory coordinateSequenceFactory = 
-                new PackedCoordinateSequenceFactory(PackedCoordinateSequenceFactory.DOUBLE, NUMBER_OF_DIMENSIONS);
+        final PackedCoordinateSequenceFactory coordinateSequenceFactory = PackedCoordinateSequenceFactory.DOUBLE_FACTORY;
         return new GeometryFactory(precisionModel, SRID, coordinateSequenceFactory);
     }
 }
