@@ -211,8 +211,12 @@ public final class MvtReader {
 
         // Guard: header data unsupported by geometry command buffer
         //  (require header and at least 1 value * 2 params)
-        if(cmdLength * GeomCmd.MoveTo.getParamCount() + 1 > geomCmds.size()) {
+        int requiredgeomCmdsLength = cmdLength * GeomCmd.MoveTo.getParamCount() + 1;
+        if(requiredgeomCmdsLength > geomCmds.size()) {
             return null;
+        }
+        if (requiredgeomCmdsLength < geomCmds.size()) {
+            geomCmds = geomCmds.subList(0, requiredgeomCmdsLength); // ignore extra commands... should it return null instead?
         }
 
         final CoordinateSequence coordSeq = geomFactory.getCoordinateSequenceFactory().create(cmdLength, 2);
